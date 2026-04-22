@@ -1,0 +1,8 @@
+name = "the-wan-standard-shop"
+compatibility_date = "2024-01-01"
+
+[site]
+bucket = "./out"
+
+[env.production]
+name = "the-wan-standard-shop"
