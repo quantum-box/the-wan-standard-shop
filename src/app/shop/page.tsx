@@ -1,7 +1,35 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getProducts, type Product } from "@/lib/storekit";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "Shop | THE WAN STANDARD",
+  description:
+    "THE WAN STANDARD公式オンラインストア。職人の手による、愛犬のための一椀をお届けします。",
+  openGraph: {
+    title: "Shop | THE WAN STANDARD",
+    description:
+      "THE WAN STANDARD公式オンラインストア。職人の手による、愛犬のための一椀をお届けします。",
+    url: "/shop",
+    images: [
+      {
+        url: "/assets/og/tws-og-shop.jpg",
+        width: 1408,
+        height: 768,
+        alt: "THE WAN STANDARD Shop",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shop | THE WAN STANDARD",
+    description:
+      "THE WAN STANDARD公式オンラインストア。職人の手による、愛犬のための一椀をお届けします。",
+    images: ["/assets/og/tws-og-shop.jpg"],
+  },
+};
 
 export default async function ShopPage() {
   let products: Product[] = [];

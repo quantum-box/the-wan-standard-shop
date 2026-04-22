@@ -1,5 +1,33 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Nav from '@/components/Nav'
+
+export const metadata: Metadata = {
+  title: "About | THE WAN STANDARD",
+  description:
+    "THE WAN STANDARDの哲学・ブランドストーリー。日本の工芸・陶器の美意識を、愛犬と暮らす日常に。",
+  openGraph: {
+    title: "About | THE WAN STANDARD",
+    description:
+      "THE WAN STANDARDの哲学・ブランドストーリー。日本の工芸・陶器の美意識を、愛犬と暮らす日常に。",
+    url: "/about",
+    images: [
+      {
+        url: "/assets/og/tws-og-about.jpg",
+        width: 1280,
+        height: 720,
+        alt: "About THE WAN STANDARD",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About | THE WAN STANDARD",
+    description:
+      "THE WAN STANDARDの哲学・ブランドストーリー。日本の工芸・陶器の美意識を、愛犬と暮らす日常に。",
+    images: ["/assets/og/tws-og-about.jpg"],
+  },
+}
 
 export default function AboutPage() {
   return (
