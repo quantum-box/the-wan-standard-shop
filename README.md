@@ -6,7 +6,7 @@ The Wan Standard のオンラインショップです。[bakuure API](https://gi
 
 - **フレームワーク**: Next.js (App Router, Static Export)
 - **スタイル**: Tailwind CSS v4 (TWS ブランドカラー適用)
-- **デプロイ**: Cloudflare Pages (`thewanstandard.jp/shop`)
+- **デプロイ**: Tachyon Cloud App プラットフォーム (`thewanstandard.jp/shop`)
 - **バックエンド**: bakuure API (TWS テナント)
 
 ## Phase 1 機能
@@ -46,8 +46,17 @@ npm run build
 
 ## デプロイ
 
-Cloudflare Pages に接続し、以下の設定でデプロイします:
+**Tachyon Cloud App プラットフォーム**でデプロイされる。
+
+- GitHub Actions auto-deploy は **使わない** (削除済み / 削除予定)
+- `CLOUDFLARE_API_TOKEN` 等の Cloudflare API クレデンシャルは **不要**
+- Cloud App platform 経由で build / deploy が行われる
+- Cloudflare Pages 手動 deploy も基本不要 (Cloud App が制御)
+
+ビルド設定 (Cloud App 内で実行):
 
 - **Build command**: `npm run build`
 - **Output directory**: `out`
-- **Environment variables**: `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_OPERATOR_ID` を CF Pages Dashboard で設定
+- **Environment variables**: `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_OPERATOR_ID`
+
+詳細は `AGENTS.md` の「デプロイ」セクションを参照。
