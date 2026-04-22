@@ -1,0 +1,11 @@
+apiVersion: apps.tachy.one/v1alpha
+kind: CloudApp
+metadata:
+  name: the-wan-standard-shop
+  tenantId: tn_01kkk6aav60anp20d5a8151ass
+spec:
+  envVars: []
+  build:
+    framework: nextjs
+    build_command: npm run build
+    output_directory: out
