@@ -25,4 +25,6 @@ body {
   background-color: var(--color-p1);
   color: var(--color-p2);
   font-family: var(--font-sans-ja), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
