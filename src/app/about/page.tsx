@@ -94,7 +94,7 @@ export default function AboutPage() {
                 kanji: '腕',
                 sub: '',
                 title: '職人の腕',
-                desc: '確かな技術と誇り。TWS shopに並ぶのは、私たちが自信を持って選んだ器だけです。',
+                desc: '確かな技術と誇り。THE WAN STANDARD shopに並ぶのは、私たちが自信を持って選んだ器だけです。',
               },
               {
                 kanji: '万',
@@ -165,7 +165,7 @@ export default function AboutPage() {
               {
                 step: '03',
                 label: '選ぶ',
-                desc: 'これを使ってほしいと心から思えたものだけを、TWS shopに並べます。難しい言葉より、正直な一言を。',
+                desc: 'これを使ってほしいと心から思えたものだけを、THE WAN STANDARD shopに並べます。難しい言葉より、正直な一言を。',
               },
             ].map((item, i) => (
               <div

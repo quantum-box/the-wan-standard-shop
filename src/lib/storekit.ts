@@ -5,7 +5,10 @@
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://bakuure.api.n1.tachy.one";
-const OPERATOR_ID = process.env.NEXT_PUBLIC_OPERATOR_ID ?? "";
+const OPERATOR_ID =
+  process.env.NEXT_PUBLIC_OPERATOR_ID ?? "tn_01kkk6aav60anp20d5a8151ass";
+const STORAGE_CDN_BASE =
+  process.env.NEXT_PUBLIC_TACHYON_STORAGE_URL ?? "https://cdn.txcloud.app";
 
 export interface Product {
   id: string;
@@ -15,6 +18,25 @@ export interface Product {
   imageUrl: string | null;
   stock: number;
   category: string | null;
+}
+
+interface GraphqlResponse<T> {
+  data?: T;
+  errors?: Array<{ message: string }>;
+}
+
+interface StorefrontProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  listPrice: number;
+  imageIds: string[];
+  categoryId: string | null;
+}
+
+interface ProductStock {
+  quantityAvailable: number;
+  trackInventory: boolean;
 }
 
 export interface CartItem {
@@ -54,12 +76,93 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function graphqlFetch<T>(
+  query: string,
+  variables?: Record<string, unknown>
+): Promise<T> {
+  const res = await fetch(`${API_BASE}/v1/graphql`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-operator-id": OPERATOR_ID,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  if (!res.ok) throw new Error(`GraphQL API error: ${res.status}`);
+
+  const payload = (await res.json()) as GraphqlResponse<T>;
+  if (payload.errors?.length) {
+    throw new Error(payload.errors.map((error) => error.message).join("; "));
+  }
+  if (!payload.data) throw new Error("GraphQL API error: missing data");
+  return payload.data;
+}
+
+function imageIdToUrl(imageId: string | undefined): string | null {
+  if (!imageId) return null;
+  if (imageId.startsWith("http://") || imageId.startsWith("https://")) return imageId;
+  const key = imageId.replace(/^\/+/, "");
+  return `${STORAGE_CDN_BASE}/cdn-cgi/image/w=800,q=80,f=auto/${key}`;
+}
+
+function toProduct(product: StorefrontProduct, stock?: ProductStock): Product {
+  return {
+    id: product.id,
+    name: product.name,
+    description: product.description ?? "",
+    price: product.listPrice,
+    imageUrl: imageIdToUrl(product.imageIds[0]),
+    stock: stock?.trackInventory ? stock.quantityAvailable : 99,
+    category: product.categoryId,
+  };
+}
+
 export async function getProducts(): Promise<Product[]> {
-  return apiFetch<Product[]>("/v1/products");
+  const data = await graphqlFetch<{
+    storefrontProducts: { items: StorefrontProduct[] };
+  }>(
+    `query StorefrontProducts($limit: Int!, $offset: Int!) {
+      storefrontProducts(limit: $limit, offset: $offset) {
+        items {
+          id
+          name
+          description
+          listPrice
+          imageIds
+          categoryId
+        }
+      }
+    }`,
+    { limit: 100, offset: 0 }
+  );
+
+  return data.storefrontProducts.items.map((product) => toProduct(product));
 }
 
 export async function getProduct(id: string): Promise<Product> {
-  return apiFetch<Product>(`/v1/products/${id}`);
+  const data = await graphqlFetch<{
+    storefrontProduct: StorefrontProduct;
+    productStock: ProductStock;
+  }>(
+    `query StorefrontProduct($productId: ID!) {
+      storefrontProduct(productId: $productId) {
+        id
+        name
+        description
+        listPrice
+        imageIds
+        categoryId
+      }
+      productStock(productId: $productId) {
+        quantityAvailable
+        trackInventory
+      }
+    }`,
+    { productId: id }
+  );
+
+  return toProduct(data.storefrontProduct, data.productStock);
 }
 
 export async function getCart(cartId: string): Promise<Cart> {

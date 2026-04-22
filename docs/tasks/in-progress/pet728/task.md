@@ -48,3 +48,27 @@ TWS tenant ID: `tn_01kkk6aav60anp20d5a8151ass`
 - Do not deploy manually; Cloud App controls deploy.
 - Keep all external display text as `THE WAN STANDARD`; do not expose `TWS`.
 - Main branch direct push is forbidden.
+
+## Implementation Notes
+
+- SDK package import was not available in this standalone shop repo.
+- `~/tachyon-apps/apps/bakuure-ui` already uses GraphQL `storefrontProducts` and `storefrontProduct` for the shop pages.
+- `~/tachyon-apps/apps/bakuure-api/schema.graphql` confirms:
+  - `storefrontProducts(limit, offset): StorefrontProductList!`
+  - `storefrontProduct(productId): StorefrontProduct!`
+  - `productStock(productId): GqlProductStock!`
+- `src/lib/storekit.ts` now calls `${NEXT_PUBLIC_API_BASE_URL}/v1/graphql` with `x-operator-id`.
+- `NEXT_PUBLIC_OPERATOR_ID` still wins when set; otherwise the TWS tenant ID is used as the fallback for static builds.
+- `getProducts()` maps GraphQL storefront products to the existing `Product` interface to avoid page-level churn.
+- `getProduct(id)` fetches `storefrontProduct` plus `productStock` so `/shop/[id]` quantity limits reflect current inventory at build time.
+- Public brand text found during verification was normalized to `THE WAN STANDARD`.
+
+## Verification
+
+- `curl` against production GraphQL with tenant `tn_01kkk6aav60anp20d5a8151ass` returned the PET-727 products.
+- `npm run lint` passed.
+- `npm run build` passed.
+- Static export generated `/shop` and 5 `/shop/[id]` pages from GraphQL data.
+- Served `out/` locally at `http://localhost:3000` and confirmed:
+  - `GET /shop/` returned 200 and included TWS tenant product cards.
+  - `GET /shop/pd_01kpfqkppzfygz2sp2a3ee1vxd/` returned 200 and included product detail, price, description, and quantity options.

@@ -71,7 +71,7 @@ export default function ThanksClient() {
           <p className="text-n1 text-xs text-center mt-2 leading-relaxed">
             友だち追加で、次回ご注文 5%OFFクーポンをプレゼント
             <br />
-            コード: TWS-THANKS5（2026年6月30日まで有効）
+            クーポンコードはLINEでご確認ください（2026年6月30日まで有効）
           </p>
 
           {/* gap */}
