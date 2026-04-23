@@ -1,59 +1,33 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { getProduct, getProducts } from "@/lib/storekit";
 import { ProductDetail } from "./ProductDetail";
 
 export const dynamicParams = false;
 
+// Hardcoded product IDs seeded for TWS tenant (tn_01kptmrtgnm746m5mpr78e2esd).
+// CF Pages build environment cannot reach bakuure API, so IDs are static here.
+// Add new IDs when products are added to the tenant.
+const PRODUCT_IDS = [
+  "pd_01kpx25jdxawpstd6mtt8f2bhd",
+  "pd_01kpx25jdx9jdjqp1zszbrtff8",
+  "pd_01kpx25jdx1z5h7y38s7h83a35",
+  "pd_01kpx25jdxbwr5texzq3d5zahy",
+  "pd_01kpx25jdxecw29dy9njm3mhzd",
+];
+
 export async function generateStaticParams() {
-  try {
-    const products = await getProducts();
-    if (products.length > 0) return products.map((p) => ({ id: p.id }));
-  } catch {
-    // API unavailable at build time — fall through to placeholder
-  }
-  // Placeholder keeps output:export happy when no products exist yet.
-  // In CF Pages builds with NEXT_PUBLIC_OPERATOR_ID set, real IDs replace this.
-  return [{ id: "_noop" }];
+  return PRODUCT_IDS.map((id) => ({ id }));
 }
+
+export const metadata: Metadata = {
+  title: "商品詳細 | THE WAN STANDARD",
+  description: "THE WAN STANDARD公式オンラインストア。職人の手による、愛犬のための一椀をお届けします。",
+};
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  if (id === "_noop") return {};
-  const product = await getProduct(id).catch(() => null);
-  if (!product) return {};
-
-  const title = `${product.name} | THE WAN STANDARD`;
-  const description = `${product.name} — THE WAN STANDARD公式オンラインストア。¥${product.price.toLocaleString("ja-JP")}`;
-  const image = product.imageUrl || "/assets/og/tws-og-shop.jpg";
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url: `/shop/${product.id}`,
-      type: "website",
-      images: [{ url: image, alt: product.name }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [image],
-    },
-  };
-}
-
 export default async function ProductPage({ params }: Props) {
   const { id } = await params;
-  if (id === "_noop") notFound();
-  const product = await getProduct(id).catch(() => null);
-  if (!product) notFound();
-  return <ProductDetail product={product} />;
+  return <ProductDetail productId={id} />;
 }

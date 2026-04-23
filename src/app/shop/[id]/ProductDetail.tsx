@@ -1,21 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { addToCart, type Product } from "@/lib/storekit";
+import { getProduct, addToCart, type Product } from "@/lib/storekit";
 import { getCartId, setCartId } from "@/lib/cart-storage";
 import Link from "next/link";
 
 interface Props {
-  product: Product;
+  productId: string;
 }
 
-export function ProductDetail({ product }: Props) {
+export function ProductDetail({ productId }: Props) {
   const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
 
+  useEffect(() => {
+    getProduct(productId)
+      .then(setProduct)
+      .catch(() => setProduct(null))
+      .finally(() => setLoading(false));
+  }, [productId]);
+
   async function handleAddToCart() {
+    if (!product) return;
     setAdding(true);
     try {
       const cartId = getCartId();
@@ -27,6 +37,21 @@ export function ProductDetail({ product }: Props) {
     } finally {
       setAdding(false);
     }
+  }
+
+  if (loading) {
+    return <p className="text-n1 text-sm">読み込み中...</p>;
+  }
+
+  if (!product) {
+    return (
+      <div>
+        <Link href="/shop" className="text-sm text-n1 hover:text-p2 mb-6 inline-block">
+          ← ショップに戻る
+        </Link>
+        <p className="text-n1 text-sm">商品が見つかりませんでした。</p>
+      </div>
+    );
   }
 
   return (
