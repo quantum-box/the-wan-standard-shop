@@ -6,7 +6,7 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://bakuure.api.n1.tachy.one";
 const OPERATOR_ID =
-  process.env.NEXT_PUBLIC_OPERATOR_ID ?? "tn_01kkk6aav60anp20d5a8151ass";
+  process.env.NEXT_PUBLIC_OPERATOR_ID ?? "tn_01kptmrtgnm746m5mpr78e2esd";
 const STORAGE_CDN_BASE =
   process.env.NEXT_PUBLIC_TACHYON_STORAGE_URL ?? "https://cdn.txcloud.app";
 
