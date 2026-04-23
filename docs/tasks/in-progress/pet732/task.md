@@ -115,6 +115,12 @@ input CheckoutInput {
 - [ ] checkout/page.tsx 修正
 - [ ] cart/page.tsx 修正
 - [ ] products seed 依頼 (pdm-pd)
-- [ ] PR 作成
-- [ ] CI → merge
-- [ ] 本番 E2E
+- [x] PR 作成 → PR #9 merged (a0b06b1)
+- [x] CI → merge 完了
+- [ ] 本番 E2E (rebuild 待ち → products seed 後の新 build で product pages 生成)
+
+## Rebuild Trigger
+
+products seed (2026-04-23) が Cloud App build より後に適用されたため、
+/shop は "商品準備中" のまま、/shop/[id] pages は `_noop` のみ。
+本 commit が Cloud App rebuild を trigger し、5商品が静的生成される。
