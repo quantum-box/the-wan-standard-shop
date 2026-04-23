@@ -40,6 +40,7 @@ interface ProductStock {
 }
 
 export interface CartItem {
+  itemId: string;
   productId: string;
   quantity: number;
   product: Product;
@@ -52,28 +53,25 @@ export interface Cart {
 
 export interface OrderInput {
   cartId: string;
-  shippingAddress: {
-    name: string;
-    postalCode: string;
-    prefecture: string;
-    city: string;
-    line1: string;
-    line2?: string;
-    phone: string;
-  };
+  name: string;
+  phone: string;
+  email?: string;
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "x-operator-id": OPERATOR_ID,
-      ...init?.headers,
-    },
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status} ${path}`);
-  return res.json() as Promise<T>;
+interface GqlCartItem {
+  id: string;
+  productId: string;
+  quantity: number;
+}
+
+interface GqlCart {
+  id: string;
+  items: GqlCartItem[];
+}
+
+interface GqlConsumerOrder {
+  id: string;
+  checkoutUrl: string | null;
 }
 
 async function graphqlFetch<T>(
@@ -116,6 +114,31 @@ function toProduct(product: StorefrontProduct, stock?: ProductStock): Product {
     stock: stock?.trackInventory ? stock.quantityAvailable : 99,
     category: product.categoryId,
   };
+}
+
+function getSessionId(): string {
+  if (typeof window === "undefined") return crypto.randomUUID();
+  let sid = localStorage.getItem("tws_session_id");
+  if (!sid) {
+    sid = crypto.randomUUID();
+    localStorage.setItem("tws_session_id", sid);
+  }
+  return sid;
+}
+
+async function enrichCart(gqlCart: GqlCart): Promise<Cart> {
+  const items = await Promise.all(
+    gqlCart.items.map(async (item) => {
+      const product = await getProduct(item.productId);
+      return {
+        itemId: item.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        product,
+      };
+    })
+  );
+  return { id: gqlCart.id, items };
 }
 
 export async function getProducts(): Promise<Product[]> {
@@ -166,7 +189,20 @@ export async function getProduct(id: string): Promise<Product> {
 }
 
 export async function getCart(cartId: string): Promise<Cart> {
-  return apiFetch<Cart>(`/v1/carts/${cartId}`);
+  const data = await graphqlFetch<{ cart: GqlCart }>(
+    `query GetCart($cartId: ID!) {
+      cart(cartId: $cartId) {
+        id
+        items {
+          id
+          productId
+          quantity
+        }
+      }
+    }`,
+    { cartId }
+  );
+  return enrichCart(data.cart);
 }
 
 export async function addToCart(
@@ -174,36 +210,95 @@ export async function addToCart(
   productId: string,
   quantity: number
 ): Promise<Cart> {
-  const path = cartId ? `/v1/carts/${cartId}/items` : "/v1/carts";
-  return apiFetch<Cart>(path, {
-    method: "POST",
-    body: JSON.stringify({ productId, quantity }),
-  });
+  let actualCartId = cartId;
+
+  if (!actualCartId) {
+    const sessionId = getSessionId();
+    const createData = await graphqlFetch<{ createCart: { id: string } }>(
+      `mutation CreateCart($sessionId: String) {
+        createCart(input: { sessionId: $sessionId }) {
+          id
+        }
+      }`,
+      { sessionId }
+    );
+    actualCartId = createData.createCart.id;
+  }
+
+  const data = await graphqlFetch<{ addCartItem: GqlCart }>(
+    `mutation AddCartItem($cartId: ID!, $productId: String!, $quantity: Int!) {
+      addCartItem(cartId: $cartId, input: { productId: $productId, quantity: $quantity }) {
+        id
+        items {
+          id
+          productId
+          quantity
+        }
+      }
+    }`,
+    { cartId: actualCartId, productId, quantity }
+  );
+
+  return enrichCart(data.addCartItem);
 }
 
 export async function updateCartItem(
   cartId: string,
-  productId: string,
+  itemId: string,
   quantity: number
 ): Promise<Cart> {
-  return apiFetch<Cart>(`/v1/carts/${cartId}/items/${productId}`, {
-    method: "PATCH",
-    body: JSON.stringify({ quantity }),
-  });
+  const data = await graphqlFetch<{ updateCartItem: GqlCart }>(
+    `mutation UpdateCartItem($cartId: ID!, $itemId: ID!, $quantity: Int!) {
+      updateCartItem(cartId: $cartId, itemId: $itemId, input: { quantity: $quantity }) {
+        id
+        items {
+          id
+          productId
+          quantity
+        }
+      }
+    }`,
+    { cartId, itemId, quantity }
+  );
+  return enrichCart(data.updateCartItem);
 }
 
 export async function removeCartItem(
   cartId: string,
-  productId: string
+  itemId: string
 ): Promise<Cart> {
-  return apiFetch<Cart>(`/v1/carts/${cartId}/items/${productId}`, {
-    method: "DELETE",
-  });
+  await graphqlFetch<{ removeCartItem: boolean }>(
+    `mutation RemoveCartItem($cartId: ID!, $itemId: ID!) {
+      removeCartItem(cartId: $cartId, itemId: $itemId)
+    }`,
+    { cartId, itemId }
+  );
+  return getCart(cartId);
 }
 
-export async function createOrder(input: OrderInput): Promise<{ id: string; checkoutUrl: string }> {
-  return apiFetch<{ id: string; checkoutUrl: string }>("/v1/orders", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+export async function createOrder(
+  input: OrderInput
+): Promise<{ id: string; checkoutUrl: string | null }> {
+  const data = await graphqlFetch<{ checkout: GqlConsumerOrder }>(
+    `mutation Checkout($input: CheckoutInput!) {
+      checkout(input: $input) {
+        id
+        checkoutUrl
+      }
+    }`,
+    {
+      input: {
+        cartId: input.cartId,
+        fulfillmentMethod: "pickup",
+        paymentMethod: "in_store",
+        shippingName: input.name,
+        shippingPhone: input.phone,
+        customerEmail: input.email,
+      },
+    }
+  );
+  return {
+    id: data.checkout.id,
+    checkoutUrl: data.checkout.checkoutUrl ?? null,
+  };
 }
