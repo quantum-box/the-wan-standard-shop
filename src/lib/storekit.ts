@@ -4,11 +4,9 @@
  * See: https://github.com/quantum-box/bakuure-storekit (WIP)
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://bakuure.api.n1.tachy.one";
-const OPERATOR_ID =
-  process.env.NEXT_PUBLIC_OPERATOR_ID ?? "tn_01kptmrtgnm746m5mpr78e2esd";
-const STORAGE_CDN_BASE =
-  process.env.NEXT_PUBLIC_TACHYON_STORAGE_URL ?? "https://cdn.txcloud.app";
+const API_BASE = "https://bakuure.api.n1.tachy.one";
+const OPERATOR_ID = "tn_01kptmrtgnm746m5mpr78e2esd";
+const STORAGE_CDN_BASE = "https://cdn.txcloud.app";
 
 export interface Product {
   id: string;
