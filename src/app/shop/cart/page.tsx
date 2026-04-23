@@ -12,17 +12,25 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const cartId = getCartId();
-    if (!cartId) {
-      setLoading(false);
-      return;
-    }
-    getCart(cartId)
-      .then(setCart)
-      .catch(() => {
+    let canceled = false;
+
+    async function loadCart() {
+      try {
+        const cartId = getCartId();
+        if (!cartId) return;
+        const nextCart = await getCart(cartId);
+        if (!canceled) setCart(nextCart);
+      } catch {
         clearCartId();
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        if (!canceled) setLoading(false);
+      }
+    }
+
+    loadCart();
+    return () => {
+      canceled = true;
+    };
   }, []);
 
   async function handleUpdate(productId: string, quantity: number) {

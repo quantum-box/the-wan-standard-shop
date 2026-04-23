@@ -9,7 +9,7 @@ export function Header({ cartCount }: HeaderProps) {
     <header className="border-b border-s2 bg-p1">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <Link href="/" className="font-serif-en text-lg tracking-widest text-p2 uppercase">
-          The Wan Standard
+          THE WAN STANDARD
         </Link>
         <nav className="flex items-center gap-6">
           <Link href="/" className="text-sm text-n1 hover:text-p2 transition-colors">

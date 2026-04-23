@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import Nav from '@/components/Nav'
 import ScenesSection from '@/components/ScenesSection'
 
@@ -29,12 +30,12 @@ export default function Home() {
             <br />
             新しい基準。
           </h1>
-          <a
+          <Link
             href="/shop"
             className="inline-block bg-p2 text-p1 px-10 py-4 text-xs tracking-[0.3em] uppercase font-sans-ja hover:bg-s2 hover:text-p3 transition-colors duration-300"
           >
             商品を見る
-          </a>
+          </Link>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-s2/60 to-transparent" />
@@ -131,12 +132,12 @@ export default function Home() {
             <br />
             最高の一椀を。
           </h2>
-          <a
+          <Link
             href="/shop"
             className="inline-block bg-s2 text-p3 px-12 py-4 text-xs tracking-[0.3em] uppercase font-sans-ja hover:bg-p1 hover:text-p3 transition-colors duration-300"
           >
             今すぐ探す
-          </a>
+          </Link>
           <div className="h-px w-24 bg-s2/60 mt-12 mx-auto" />
         </div>
       </section>

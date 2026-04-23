@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description:
     "日本の工芸・陶器の美意識を体現したプレミアム犬用食器ブランド。食品衛生法基準に適合した、職人の手による一椀をあなたの愛犬へ。",
   openGraph: {
-    siteName: "The Wan Standard",
+    siteName: "THE WAN STANDARD",
     locale: "ja_JP",
   },
 };
