@@ -33,15 +33,15 @@ export default function CartPage() {
     };
   }, []);
 
-  async function handleUpdate(productId: string, quantity: number) {
+  async function handleUpdate(itemId: string, quantity: number) {
     const cartId = getCartId();
     if (!cartId) return;
     try {
       if (quantity === 0) {
-        const updated = await removeCartItem(cartId, productId);
+        const updated = await removeCartItem(cartId, itemId);
         setCart(updated);
       } else {
-        const updated = await updateCartItem(cartId, productId, quantity);
+        const updated = await updateCartItem(cartId, itemId, quantity);
         setCart(updated);
       }
     } catch {
@@ -72,7 +72,7 @@ export default function CartPage() {
         <div className="flex flex-col gap-6">
           <div className="divide-y divide-s2/30">
             {cart.items.map((item) => (
-              <div key={item.productId} className="py-4 flex items-start gap-4">
+              <div key={item.itemId} className="py-4 flex items-start gap-4">
                 <div className="w-20 h-20 bg-white border border-s2/40 flex-shrink-0 overflow-hidden">
                   {item.product.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -96,7 +96,7 @@ export default function CartPage() {
                     <select
                       value={item.quantity}
                       onChange={(e) =>
-                        handleUpdate(item.productId, Number(e.target.value))
+                        handleUpdate(item.itemId, Number(e.target.value))
                       }
                       className="border border-s2/60 px-2 py-1 text-sm bg-p1 text-p2"
                     >
@@ -107,7 +107,7 @@ export default function CartPage() {
                       ))}
                     </select>
                     <button
-                      onClick={() => handleUpdate(item.productId, 0)}
+                      onClick={() => handleUpdate(item.itemId, 0)}
                       className="text-xs text-n1 hover:text-s1 transition-colors"
                     >
                       削除
