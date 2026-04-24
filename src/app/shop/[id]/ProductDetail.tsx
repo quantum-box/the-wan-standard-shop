@@ -80,33 +80,40 @@ export function ProductDetail({ productId }: Props) {
           {product.description && (
             <p className="text-sm text-n1 leading-relaxed">{product.description}</p>
           )}
-          {product.stock === 0 ? (
-            <p className="text-sm text-s1">在庫切れです</p>
-          ) : (
-            <>
-              <div className="flex items-center gap-3">
-                <label className="text-sm text-p2">数量</label>
-                <select
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="border border-s2/60 px-3 py-1.5 text-sm bg-p1 text-p2"
-                >
-                  {Array.from({ length: Math.min(product.stock, 10) }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {i + 1}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                onClick={handleAddToCart}
-                disabled={adding}
-                className="mt-2 px-6 py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 transition-colors disabled:opacity-50"
-              >
-                {adding ? "追加中..." : "カートに追加"}
-              </button>
-            </>
+          {product.stock === 0 && (
+            <span className="inline-block w-fit px-3 py-1 bg-s1 text-p1 text-xs tracking-widest">
+              在庫切れ
+            </span>
           )}
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-p2">数量</label>
+            <select
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              disabled={product.stock === 0}
+              className="border border-s2/60 px-3 py-1.5 text-sm bg-p1 text-p2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {Array.from(
+                { length: Math.max(1, Math.min(product.stock, 10)) },
+                (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {i + 1}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={adding || product.stock === 0}
+            className="mt-2 px-6 py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-p2"
+          >
+            {product.stock === 0
+              ? "在庫切れ"
+              : adding
+              ? "追加中..."
+              : "カートに追加"}
+          </button>
         </div>
       </div>
     </div>
