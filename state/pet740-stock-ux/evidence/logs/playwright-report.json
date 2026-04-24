@@ -18,7 +18,7 @@
       {
         "outputDir": "/home/ubuntu/the-wan-standard-shop.pet-740/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 2,
         "metadata": {
           "actualWorkers": 1
         },
@@ -87,12 +87,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6285,
+                      "duration": 3689,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T08:40:43.621Z",
+                      "startTime": "2026-04-24T08:48:06.840Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -121,12 +121,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2861,
+                      "duration": 2271,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T08:40:50.303Z",
+                      "startTime": "2026-04-24T08:48:10.623Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -155,12 +155,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10800,
+                      "duration": 11453,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T08:40:53.180Z",
+                      "startTime": "2026-04-24T08:48:12.909Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -180,8 +180,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-24T08:40:42.744Z",
-    "duration": 21311.407,
+    "startTime": "2026-04-24T08:48:06.207Z",
+    "duration": 18224.735,
     "expected": 3,
     "skipped": 0,
     "unexpected": 0,

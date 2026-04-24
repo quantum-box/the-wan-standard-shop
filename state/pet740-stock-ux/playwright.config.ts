@@ -6,10 +6,11 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
+  retries: 2,
   reporter: [["list"], ["json", { outputFile: "evidence/logs/playwright-report.json" }]],
   use: {
-    viewport: { width: 1280, height: 800 },
     ...devices["Desktop Chrome"],
+    viewport: { width: 1280, height: 800 },
     trace: "retain-on-failure",
     video: "retain-on-failure",
   },
