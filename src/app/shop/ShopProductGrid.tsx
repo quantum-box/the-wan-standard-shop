@@ -31,7 +31,7 @@ export function ShopProductGrid() {
           href={`/shop/${product.id}`}
           className="group border border-s2/40 hover:border-s2 transition-colors"
         >
-          <div className="aspect-square bg-white overflow-hidden">
+          <div className="relative aspect-square bg-white overflow-hidden">
             {product.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -44,15 +44,19 @@ export function ShopProductGrid() {
                 No Image
               </div>
             )}
+            {product.stock === 0 && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+                <span className="px-3 py-1 bg-s1 text-p1 text-xs tracking-widest">
+                  在庫切れ
+                </span>
+              </div>
+            )}
           </div>
           <div className="p-4">
             <p className="font-serif-ja text-p2 mb-1">{product.name}</p>
             <p className="text-sm text-n1">
               ¥{product.price.toLocaleString("ja-JP")}
             </p>
-            {product.stock === 0 && (
-              <p className="text-xs text-s1 mt-1">在庫切れ</p>
-            )}
           </div>
         </Link>
       ))}

@@ -139,6 +139,19 @@ async function enrichCart(gqlCart: GqlCart): Promise<Cart> {
   return { id: gqlCart.id, items };
 }
 
+async function getProductStock(productId: string): Promise<ProductStock | undefined> {
+  const data = await graphqlFetch<{ productStock: ProductStock | null }>(
+    `query ProductStock($productId: ID!) {
+      productStock(productId: $productId) {
+        quantityAvailable
+        trackInventory
+      }
+    }`,
+    { productId }
+  );
+  return data.productStock ?? undefined;
+}
+
 export async function getProducts(): Promise<Product[]> {
   const data = await graphqlFetch<{
     storefrontProducts: { items: StorefrontProduct[] };
@@ -158,7 +171,11 @@ export async function getProducts(): Promise<Product[]> {
     { limit: 100, offset: 0 }
   );
 
-  return data.storefrontProducts.items.map((product) => toProduct(product));
+  const items = data.storefrontProducts.items;
+  const stocks = await Promise.all(
+    items.map((product) => getProductStock(product.id).catch(() => undefined))
+  );
+  return items.map((product, index) => toProduct(product, stocks[index]));
 }
 
 export async function getProduct(id: string): Promise<Product> {
