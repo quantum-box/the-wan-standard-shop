@@ -7,8 +7,8 @@ export function Footer() {
             &copy; {new Date().getFullYear()} THE WAN STANDARD
           </p>
           <nav className="flex gap-6">
-            <a href="/legal/tokusho" className="text-sm text-n1 hover:text-p2">
-              特定商取引法に基づく表記
+            <a href="/legal/terms" className="text-sm text-n1 hover:text-p2">
+              利用規約
             </a>
             <a href="/legal/privacy" className="text-sm text-n1 hover:text-p2">
               プライバシーポリシー
