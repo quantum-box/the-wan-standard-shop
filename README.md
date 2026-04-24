@@ -60,3 +60,5 @@ npm run build
 - **Environment variables**: `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_OPERATOR_ID`
 
 詳細は `AGENTS.md` の「デプロイ」セクションを参照。
+
+PLT-811 post-fix preview probe at 2026-04-25T02:28:10+09:00
