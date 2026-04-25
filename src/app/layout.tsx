@@ -21,8 +21,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: defaultOgImage,
-        width: 1408,
-        height: 768,
+        width: 1296,
+        height: 864,
         alt: "THE WAN STANDARD — 愛犬のための、新しい基準。",
       },
     ],
