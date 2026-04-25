@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/assets/og/tws-og-about.jpg",
-        width: 1280,
-        height: 720,
+        width: 1408,
+        height: 768,
         alt: "About THE WAN STANDARD",
       },
     ],
