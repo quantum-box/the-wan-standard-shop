@@ -72,6 +72,30 @@ interface GqlConsumerOrder {
   checkoutUrl: string | null;
 }
 
+export interface OrderLookupItem {
+  id: string;
+  productName: string;
+  quantity: number;
+  subtotalNanodollar: string;
+}
+
+export interface OrderLookupResult {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  fulfillmentMethod: string | null;
+  shippingName: string | null;
+  totalNanodollar: string;
+  createdAt: string;
+  items: OrderLookupItem[];
+}
+
+interface GqlOrderLookupPayload {
+  order: OrderLookupResult;
+  lookupToken: string;
+  expiresAt: string;
+}
+
 async function graphqlFetch<T>(
   query: string,
   variables?: Record<string, unknown>
@@ -316,4 +340,59 @@ export async function createOrder(
     id: data.checkout.id,
     checkoutUrl: data.checkout.checkoutUrl ?? null,
   };
+}
+
+export async function getOrderByLookup(input: {
+  phone: string;
+  lastDigits: string;
+}): Promise<OrderLookupResult | null> {
+  try {
+    const lookupData = await graphqlFetch<{
+      consumerOrderByLookup: GqlOrderLookupPayload;
+    }>(
+      `mutation ConsumerOrderByLookup($input: ConsumerOrderLookupInput!) {
+        consumerOrderByLookup(input: $input) {
+          lookupToken
+          order {
+            id
+          }
+        }
+      }`,
+      { input }
+    );
+
+    const detailData = await graphqlFetch<{
+      consumerOrderByLookupToken: OrderLookupResult | null;
+    }>(
+      `query ConsumerOrderByLookupToken($lookupToken: String!) {
+        consumerOrderByLookupToken(lookupToken: $lookupToken) {
+          id
+          status
+          paymentStatus
+          fulfillmentMethod
+          shippingName
+          totalNanodollar
+          createdAt
+          items {
+            id
+            productName
+            quantity
+            subtotalNanodollar
+          }
+        }
+      }`,
+      { lookupToken: lookupData.consumerOrderByLookup.lookupToken }
+    );
+
+    return detailData.consumerOrderByLookupToken;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (
+      message.includes("Order lookup not found") ||
+      message.includes("not found")
+    ) {
+      return null;
+    }
+    throw error;
+  }
 }
