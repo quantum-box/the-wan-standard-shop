@@ -91,6 +91,19 @@ export default function ThanksClient() {
           </p>
         </div>
 
+        {/* Order inquiry */}
+        <div className="border-t border-s2/50 mt-8 pt-6 px-6">
+          <p className="text-p2 text-xs text-center mb-3">
+            注文内容の確認・受け取りに関するお問い合わせ
+          </p>
+          <a
+            href="https://www.thewanstandard.jp/my-orders"
+            className="block w-full border border-s2/60 bg-p1 text-p2 py-3 px-6 text-sm text-center hover:border-p2 transition-colors"
+          >
+            ご注文について
+          </a>
+        </div>
+
         {/* Footer */}
         <div className="border-t border-s2/50 mt-8 pt-6 pb-10 px-6">
           <p className="text-p2 text-[12px] text-center leading-relaxed">
