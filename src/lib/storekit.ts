@@ -4,7 +4,9 @@
  * See: https://github.com/quantum-box/bakuure-storekit (WIP)
  */
 
-const API_BASE = "https://bakuure.api.n1.tachy.one";
+// The static export bakes this production origin into the client bundle at build time.
+// Runtime Cloud App environment variables are intentionally not read here.
+const API_BASE = "https://tachyon-field-api.txcloud.app";
 const OPERATOR_ID = "tn_01kptmrtgnm746m5mpr78e2esd";
 const STORAGE_CDN_BASE = "https://cdn.txcloud.app";
 
