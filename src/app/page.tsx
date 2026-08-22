@@ -152,7 +152,7 @@ export default function Home() {
             THE WAN STANDARD
           </span>
           <p className="font-sans-ja text-n1 text-xs tracking-wide">
-            © 2025 THE WAN STANDARD. All rights reserved.
+            © {new Date().getFullYear()} THE WAN STANDARD. All rights reserved.
           </p>
         </div>
       </footer>
