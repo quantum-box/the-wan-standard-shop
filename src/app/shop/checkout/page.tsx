@@ -54,6 +54,7 @@ export default function CheckoutPage() {
         <p className="font-medium mb-1">店舗受け取り</p>
         <p className="text-n1 text-xs">バーナードスクエア ドッグラン施設にてお受け取りください。</p>
         <p className="text-n1 text-xs mt-1">お支払いは店頭にてお願いいたします。</p>
+        <Link href="/pickup" className="inline-block mt-2 text-xs text-p2 underline">受け取り場所・営業時間を確認</Link>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div><label className={labelClass}>お名前 *</label><input name="name" value={form.name} onChange={handleChange} required placeholder="山田 花子" className={inputClass} /></div>
