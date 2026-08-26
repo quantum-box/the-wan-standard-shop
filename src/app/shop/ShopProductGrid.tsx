@@ -8,12 +8,12 @@ export function ShopProductGrid() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [selectedSlug, setSelectedSlug] = useState("all");
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("category");
     if (requested) setSelectedSlug(requested);
-
     Promise.all([getProducts(), getCategories().catch(() => [])])
       .then(([nextProducts, nextCategories]) => {
         setProducts(nextProducts);
@@ -36,15 +36,32 @@ export function ShopProductGrid() {
   );
 
   const selectedCategory = visibleCategories.find((category) => category.slug === selectedSlug);
-  const filtered = selectedCategory
-    ? products.filter((product) => product.category === selectedCategory.id)
-    : products;
+
+  const results = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return products.filter((product) => {
+      if (selectedCategory && product.category !== selectedCategory.id) return false;
+      if (!normalized) return true;
+      const category = product.category ? categoryById.get(product.category) : undefined;
+      const searchable = `${product.name} ${product.description} ${category?.name ?? ""} ${category?.slug ?? ""}`.toLowerCase();
+      return searchable.includes(normalized);
+    });
+  }, [products, query, selectedCategory, categoryById]);
 
   if (loading) return <p className="text-n1 text-sm">読み込み中...</p>;
   if (products.length === 0) return <p className="text-n1 text-sm">現在、商品の準備中です。しばらくお待ちください。</p>;
 
   return (
     <>
+      <div className="mb-7">
+        <label htmlFor="product-search" className="block text-xs text-n1 mb-2">商品を検索</label>
+        <div className="relative max-w-xl">
+          <input id="product-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="商品名・カテゴリで検索" className="w-full border border-s2/60 bg-p1 px-4 py-3 pr-12 text-base sm:text-sm text-p2 focus:outline-none focus:border-p2" />
+          {query && <button type="button" onClick={() => setQuery("")} aria-label="検索をクリア" className="absolute inset-y-0 right-0 px-4 text-n1 hover:text-p2">×</button>}
+        </div>
+        {query && <p className="text-xs text-n1 mt-2">{results.length}件の商品</p>}
+      </div>
+
       {visibleCategories.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-7" aria-label="商品カテゴリ">
           <button type="button" onClick={() => setSelectedSlug("all")} className={`px-4 py-2 text-xs tracking-wider border transition-colors ${!selectedCategory ? "bg-p2 border-p2 text-p1" : "border-s2/60 text-p2 hover:border-p2"}`}>All</button>
@@ -54,14 +71,15 @@ export function ShopProductGrid() {
         </div>
       )}
 
-      {filtered.length === 0 ? (
-        <div className="py-12 text-center">
-          <p className="text-sm text-n1 mb-3">このカテゴリの商品はまだありません。</p>
-          <button onClick={() => setSelectedSlug("all")} className="text-sm text-p2 underline">すべての商品を見る</button>
+      {results.length === 0 ? (
+        <div className="py-14 text-center border-y border-s2/30">
+          <p className="text-sm text-p2 mb-2">条件に一致する商品はありませんでした。</p>
+          <p className="text-xs text-n1 mb-4">検索語を短くするか、別のカテゴリをお試しください。</p>
+          <button onClick={() => { setQuery(""); setSelectedSlug("all"); }} className="text-sm text-p2 underline">すべての商品を見る</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((product) => {
+          {results.map((product) => {
             const category = product.category ? categoryById.get(product.category) : undefined;
             return (
               <Link key={product.id} href={`/shop/${product.id}`} className="group border border-s2/40 hover:border-s2 transition-colors">
