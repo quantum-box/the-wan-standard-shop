@@ -60,12 +60,14 @@ export default function CheckoutPage() {
         <p className="font-medium mb-1">店舗受け取り</p>
         <p className="text-n1 text-xs">バーナードスクエアにてお受け取りください。</p>
         <p className="text-n1 text-xs mt-1">お支払いは店頭にてお願いいたします。</p>
+        <Link href="/pickup" className="inline-block mt-2 text-xs text-p2 underline">受け取り場所・営業時間を確認</Link>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div><label className={labelClass}>お名前 *</label><input name="name" value={form.name} onChange={handleChange} required autoComplete="name" placeholder="山田 花子" className={inputClass} /></div>
         <div><label className={labelClass}>電話番号 *</label><input name="phone" value={form.phone} onChange={handleChange} required autoComplete="tel" placeholder="090-1234-5678" type="tel" className={inputClass} /></div>
         <div><label className={labelClass}>メールアドレス（任意）</label><input name="email" value={form.email} onChange={handleChange} autoComplete="email" placeholder="example@email.com" type="email" className={inputClass} /></div>
+        <p className="text-xs text-n1 leading-relaxed">確認画面へ進む前に、<Link href="/guide/cancel" className="underline text-p2">返品・キャンセルポリシー</Link>をご確認ください。</p>
         {error && <p role="alert" className="text-sm text-s1">{error}</p>}
         <button type="submit" disabled={submitting} className="mt-2 py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           {submitting ? "確認画面を準備中..." : "注文内容を確認する"}
