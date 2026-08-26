@@ -12,6 +12,20 @@
     "test": "NEXT_PUBLIC_API_BASE_URL=https://bakuure.api.n1.tachy.one/ playwright test tests/storekit-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts tests/commerce-resilience.spec.ts",
     "scan:retired-origins": "node scripts/check-retired-origins.mjs out"
   },
-  "dependencies": { "next": "16.2.4", "react": "19.2.4", "react-dom": "19.2.4" },
-  "devDependencies": { "@playwright/test": "^1.59.1", "@tailwindcss/postcss": "^4", "@types/node": "^20", "@types/react": "^19", "@types/react-dom": "^19", "eslint": "^9", "eslint-config-next": "16.2.4", "tailwindcss": "^4", "typescript": "^5" }
+  "dependencies": {
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
 }

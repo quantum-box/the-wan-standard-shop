@@ -1,16 +1,78 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createOrder, getCart } from "@/lib/storekit";
-import { getCartId, clearCartId } from "@/lib/cart-storage";
+import { getCart } from "@/lib/storekit";
+import { getCartId } from "@/lib/cart-storage";
+import { getCheckoutDraft, saveCheckoutDraft, type CheckoutContact } from "@/lib/checkout-storage";
 import Link from "next/link";
 
-interface PickupForm { name:string; phone:string; email:string; }
-export default function CheckoutPage(){
- const router=useRouter(); const [form,setForm]=useState<PickupForm>({name:"",phone:"",email:""}); const [submitting,setSubmitting]=useState(false); const [error,setError]=useState<string|null>(null); const submitLock=useRef(false);
- function handleChange(e:React.ChangeEvent<HTMLInputElement>){setForm(prev=>({...prev,[e.target.name]:e.target.value}));}
- async function handleSubmit(e:React.FormEvent){e.preventDefault();if(submitLock.current)return;const cartId=getCartId();if(!cartId){setError("カートが空です。商品を選び直してください。");return;}submitLock.current=true;setSubmitting(true);setError(null);try{const cart=await getCart(cartId);if(cart.items.length===0)throw new Error("EMPTY");const conflict=cart.items.find(item=>item.quantity>item.product.stock);if(conflict)throw new Error(`STOCK:${conflict.product.name}`);const result=await createOrder({cartId,name:form.name,phone:form.phone,email:form.email||undefined});clearCartId();if(result.checkoutUrl)window.location.href=result.checkoutUrl;else router.replace(`/shop/checkout/thanks?order=${encodeURIComponent(result.id)}`);}catch(cause){submitLock.current=false;const message=cause instanceof Error?cause.message:"";if(message==="EMPTY")setError("カートが空です。商品を選び直してください。");else if(message.startsWith("STOCK:"))setError(`${message.slice(6)}の在庫が不足しています。カートに戻って数量を調整してください。`);else setError("注文処理に失敗しました。通信環境をご確認のうえ、もう一度お試しください。");}finally{setSubmitting(false);}}
- const inputClass="w-full border border-s2/60 px-3 py-2 text-sm bg-p1 text-p2 focus:outline-none focus:border-p2"; const labelClass="block text-xs text-n1 mb-1";
- return <div className="max-w-lg"><h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-8">Checkout</h1><Link href="/shop/cart" className="text-sm text-n1 hover:text-p2 mb-6 inline-block">← カートに戻る</Link><div className="border border-s2/40 bg-white px-4 py-3 mb-6 text-sm text-p2"><p className="font-medium mb-1">店舗受け取り</p><p className="text-n1 text-xs">バーナードスクエア ドッグラン施設にてお受け取りください。</p><p className="text-n1 text-xs mt-1">お支払いは店頭にてお願いいたします。</p></div><form onSubmit={handleSubmit} className="flex flex-col gap-4"><div><label className={labelClass}>お名前 *</label><input name="name" value={form.name} onChange={handleChange} required className={inputClass}/></div><div><label className={labelClass}>電話番号 *</label><input name="phone" value={form.phone} onChange={handleChange} required type="tel" className={inputClass}/></div><div><label className={labelClass}>メールアドレス（任意）</label><input name="email" value={form.email} onChange={handleChange} type="email" className={inputClass}/></div>{error&&<p role="alert" className="text-sm text-s1">{error}</p>}<button type="submit" disabled={submitting} className="mt-2 py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 disabled:opacity-50 disabled:cursor-not-allowed">{submitting?"処理中...":"注文を確定する"}</button></form></div>;
+export default function CheckoutPage() {
+  const router = useRouter();
+  const [form, setForm] = useState<CheckoutContact>({ name: "", phone: "", email: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const draft = getCheckoutDraft();
+    const cartId = getCartId();
+    if (draft && draft.cartId === cartId) setForm(draft.contact);
+  }, []);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (submitting) return;
+    const cartId = getCartId();
+    if (!cartId) {
+      setError("カートが見つかりません。商品を選び直してください。");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const cart = await getCart(cartId);
+      if (cart.items.length === 0) {
+        setError("カートに商品がありません。");
+        return;
+      }
+      saveCheckoutDraft({ cartId, contact: form, cart, savedAt: new Date().toISOString() });
+      router.push("/shop/checkout/confirm");
+    } catch {
+      setError("注文内容を読み込めませんでした。通信環境をご確認のうえ、もう一度お試しください。");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const inputClass = "w-full border border-s2/60 px-3 py-2 text-sm bg-p1 text-p2 focus:outline-none focus:border-p2";
+  const labelClass = "block text-xs text-n1 mb-1";
+
+  return (
+    <div className="max-w-lg">
+      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-8">Checkout</h1>
+      <Link href="/shop/cart" className="text-sm text-n1 hover:text-p2 mb-6 inline-block">← カートに戻る</Link>
+
+      <div className="border border-s2/40 bg-white px-4 py-3 mb-6 text-sm text-p2">
+        <p className="font-medium mb-1">店舗受け取り</p>
+        <p className="text-n1 text-xs">バーナードスクエアにてお受け取りください。</p>
+        <p className="text-n1 text-xs mt-1">お支払いは店頭にてお願いいたします。</p>
+        <Link href="/pickup" className="inline-block mt-2 text-xs text-p2 underline">受け取り場所・営業時間を確認</Link>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div><label className={labelClass}>お名前 *</label><input name="name" value={form.name} onChange={handleChange} required autoComplete="name" placeholder="山田 花子" className={inputClass} /></div>
+        <div><label className={labelClass}>電話番号 *</label><input name="phone" value={form.phone} onChange={handleChange} required autoComplete="tel" placeholder="090-1234-5678" type="tel" className={inputClass} /></div>
+        <div><label className={labelClass}>メールアドレス（任意）</label><input name="email" value={form.email} onChange={handleChange} autoComplete="email" placeholder="example@email.com" type="email" className={inputClass} /></div>
+        <p className="text-xs text-n1 leading-relaxed">確認画面へ進む前に、<Link href="/guide/cancel" className="underline text-p2">返品・キャンセルポリシー</Link>をご確認ください。</p>
+        {error && <p role="alert" className="text-sm text-s1">{error}</p>}
+        <button type="submit" disabled={submitting} className="mt-2 py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          {submitting ? "確認画面を準備中..." : "注文内容を確認する"}
+        </button>
+      </form>
+    </div>
+  );
 }
