@@ -11,9 +11,12 @@ export function Footer() {
               &copy; {new Date().getFullYear()} THE WAN STANDARD
             </p>
           </div>
-          <nav className="flex gap-6">
+          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
             <a href="/my-orders" className="text-sm text-n1 hover:text-p2">
               ご注文について
+            </a>
+            <a href="/legal/commercial-transactions" className="text-sm text-n1 hover:text-p2">
+              特定商取引法に基づく表記
             </a>
             <a href="/legal/terms" className="text-sm text-n1 hover:text-p2">
               利用規約
