@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { BrandLockup } from '@/components/BrandLockup'
 import Nav from '@/components/Nav'
 import ScenesSection from '@/components/ScenesSection'
 
@@ -148,9 +149,7 @@ export default function Home() {
       <footer className="bg-p3">
         <div className="h-px bg-gradient-to-r from-transparent via-s2/40 to-transparent" />
         <div className="max-w-7xl mx-auto px-8 md:px-16 py-12 flex flex-col md:flex-row items-center justify-between gap-4">
-          <span className="font-serif-en font-light tracking-[0.3em] text-s2 text-sm uppercase">
-            THE WAN STANDARD
-          </span>
+          <BrandLockup tone="dark" markSize={34} wordmarkClassName="text-sm" />
           <p className="font-sans-ja text-n1 text-xs tracking-wide">
             © {new Date().getFullYear()} THE WAN STANDARD. All rights reserved.
           </p>

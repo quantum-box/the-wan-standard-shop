@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLockup } from "@/components/BrandLockup";
 
 interface HeaderProps {
   cartCount?: number;
@@ -8,8 +9,12 @@ export function Header({ cartCount }: HeaderProps) {
   return (
     <header className="border-b border-s2 bg-p1">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        <Link href="/" className="font-serif-en text-lg tracking-widest text-p2 uppercase">
-          THE WAN STANDARD
+        <Link href="/" aria-label="THE WAN STANDARD ホーム">
+          <BrandLockup
+            markSize={34}
+            hideWordmarkOnMobile
+            wordmarkClassName="text-base"
+          />
         </Link>
         <nav className="flex items-center gap-6">
           <Link href="/" className="text-sm text-n1 hover:text-p2 transition-colors">
