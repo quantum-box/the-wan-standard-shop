@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { BrandLockup } from '@/components/BrandLockup'
 
 export default function Nav() {
   const pathname = usePathname()
@@ -11,9 +12,14 @@ export default function Nav() {
       <div className="max-w-7xl mx-auto px-8 md:px-16 h-16 flex items-center justify-between">
         <Link
           href="/"
-          className="font-serif-en font-light tracking-[0.3em] text-s2 text-sm md:text-base uppercase"
+          aria-label="THE WAN STANDARD ホーム"
         >
-          THE WAN STANDARD
+          <BrandLockup
+            tone="dark"
+            markSize={36}
+            hideWordmarkOnMobile
+            wordmarkClassName="text-sm md:text-base"
+          />
         </Link>
 
         <div className="flex items-center gap-8 md:gap-10">
