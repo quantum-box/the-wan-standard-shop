@@ -7,6 +7,15 @@ import { createOrder, getCart, type Cart } from "@/lib/storekit";
 import { clearCartId } from "@/lib/cart-storage";
 import { clearCheckoutDraft, getCheckoutDraft, type CheckoutDraft } from "@/lib/checkout-storage";
 
+function cartChanged(previous: Cart, latest: Cart): boolean {
+  if (previous.items.length !== latest.items.length) return true;
+  const latestById = new Map(latest.items.map((item) => [item.itemId, item]));
+  return previous.items.some((item) => {
+    const current = latestById.get(item.itemId);
+    return !current || current.productId !== item.productId || current.quantity !== item.quantity || current.product.price !== item.product.price;
+  });
+}
+
 export default function CheckoutConfirmPage() {
   const router = useRouter();
   const [draft, setDraft] = useState<CheckoutDraft | null>(null);
@@ -16,12 +25,12 @@ export default function CheckoutConfirmPage() {
 
   useEffect(() => { setDraft(getCheckoutDraft()); }, []);
 
-  async function validateCart(cartId: string): Promise<Cart> {
-    const latest = await getCart(cartId);
+  async function validateCart(checkoutDraft: CheckoutDraft): Promise<void> {
+    const latest = await getCart(checkoutDraft.cartId);
     if (latest.items.length === 0) throw new Error("EMPTY_CART");
     const unavailable = latest.items.find((item) => item.product.stock < item.quantity);
     if (unavailable) throw new Error(`OUT_OF_STOCK:${unavailable.product.name}`);
-    return latest;
+    if (cartChanged(checkoutDraft.cart, latest)) throw new Error("CART_CHANGED");
   }
 
   async function handleConfirm() {
@@ -30,7 +39,7 @@ export default function CheckoutConfirmPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await validateCart(draft.cartId);
+      await validateCart(draft);
       const result = await createOrder({
         cartId: draft.cartId,
         name: draft.contact.name,
@@ -48,6 +57,8 @@ export default function CheckoutConfirmPage() {
         setError(`${message.slice("OUT_OF_STOCK:".length)}の在庫が不足しています。カートに戻って数量を調整してください。`);
       } else if (message === "EMPTY_CART") {
         setError("カートに商品がありません。商品を選び直してください。");
+      } else if (message === "CART_CHANGED") {
+        setError("確認中に商品の数量または価格が変更されました。カートに戻って最新の内容をご確認ください。");
       } else {
         setError("注文を確定できませんでした。内容を確認して、もう一度お試しください。");
       }
@@ -88,6 +99,7 @@ export default function CheckoutConfirmPage() {
       <p className="text-xs text-n1 leading-relaxed mb-5">注文確定前に<Link href="/guide/cancel" className="underline text-p2">返品・キャンセル条件</Link>をご確認ください。</p>
       {error && <p role="alert" className="text-sm text-s1 mb-4">{error}</p>}
       <div className="flex flex-col-reverse sm:flex-row gap-3">
+        <Link href="/shop/cart" className="flex-1 text-center py-3 border border-s2 text-n1 text-sm hover:border-p2 hover:text-p2">カートに戻る</Link>
         <Link href="/shop/checkout" className="flex-1 text-center py-3 border border-p2 text-p2 text-sm hover:bg-white">入力内容を修正する</Link>
         <button onClick={handleConfirm} disabled={submitting} className="flex-1 py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? "注文を確定しています..." : "注文を確定する"}</button>
       </div>
