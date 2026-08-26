@@ -7,23 +7,14 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex flex-col items-center gap-2 sm:items-start">
             <BrandLockup markSize={30} wordmarkClassName="text-sm" />
-            <p className="text-xs text-n1">
-              &copy; {new Date().getFullYear()} THE WAN STANDARD
-            </p>
+            <p className="text-xs text-n1">&copy; {new Date().getFullYear()} THE WAN STANDARD</p>
           </div>
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-            <a href="/my-orders" className="text-sm text-n1 hover:text-p2">
-              ご注文について
-            </a>
-            <a href="/legal/commercial-transactions" className="text-sm text-n1 hover:text-p2">
-              特定商取引法に基づく表記
-            </a>
-            <a href="/legal/terms" className="text-sm text-n1 hover:text-p2">
-              利用規約
-            </a>
-            <a href="/legal/privacy" className="text-sm text-n1 hover:text-p2">
-              プライバシーポリシー
-            </a>
+            <a href="/my-orders" className="text-sm text-n1 hover:text-p2">ご注文について</a>
+            <a href="/faq" className="text-sm text-n1 hover:text-p2">FAQ</a>
+            <a href="/legal/commercial-transactions" className="text-sm text-n1 hover:text-p2">特定商取引法に基づく表記</a>
+            <a href="/legal/terms" className="text-sm text-n1 hover:text-p2">利用規約</a>
+            <a href="/legal/privacy" className="text-sm text-n1 hover:text-p2">プライバシーポリシー</a>
           </nav>
         </div>
       </div>
