@@ -5,7 +5,7 @@ THE WAN STANDARD のブランドサイト兼オンラインショップです。
 - ブランドサイト: [https://thewanstandard.jp](https://thewanstandard.jp)
 - オンラインショップ: [https://thewanstandard.jp/shop](https://thewanstandard.jp/shop)
 
-Next.js App Router で実装し、静的サイトとして出力します。ショップ機能は独立したテナントとして bakuure commerce API（Tachyon Field API）へ接続します。
+Next.js App Router で実装し、静的サイトとして出力します。ショップ機能は独立した TWS テナントとして **TACHYON Field GraphQL API** へ接続します。
 
 ## 主な機能
 
@@ -46,7 +46,7 @@ Next.js App Router で実装し、静的サイトとして出力します。シ�
 - Tailwind CSS 4
 - ESLint 9
 - Playwright
-- bakuure commerce GraphQL API
+- TACHYON Field GraphQL API
 - Tachyon Cloud App
 
 `next.config.ts` では `output: "export"`、`trailingSlash: true`、画像の最適化無効を設定しています。ビルド成果物は `out/` に生成されます。
@@ -100,7 +100,7 @@ npm run dev
 
 ## API・ストア機能
 
-`src/lib/storekit.ts` が bakuure commerce API の抽象レイヤーです。現在は GraphQL API を直接呼び出し、次の処理を提供しています。
+`src/lib/storekit.ts` が **TACHYON Field GraphQL API** の storefront 向け抽象レイヤーです。現在は GraphQL API を直接呼び出し、次の処理を提供しています。
 
 - 商品一覧・商品詳細の取得
 - 在庫数の取得
@@ -109,7 +109,11 @@ npm run dev
 - ゲスト注文照会
 - 商品画像 ID から CDN URL への変換
 
-将来 `bakuure-storekit` が利用可能になった場合は、この抽象レイヤーを SDK の import へ置き換える想定です。
+現在の API エンドポイントは以下です。
+
+```text
+https://tachyon-field-api.txcloud.app/v1/graphql
+```
 
 ### 商品追加時の注意
 
@@ -152,5 +156,4 @@ GitHub Actions からの Cloudflare Pages 自動デプロイや、`CLOUDFLARE_AP
 
 ## 関連リポジトリ
 
-- [bakuure API / Tachyon Apps](https://github.com/quantum-box/tachyon-apps)
-- [bakuure-storekit](https://github.com/quantum-box/bakuure-storekit)（WIP）
+- [TACHYON Field API / Tachyon Apps](https://github.com/quantum-box/tachyon-apps)
