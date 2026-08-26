@@ -20,6 +20,14 @@ export interface Product {
   category: string | null;
 }
 
+export interface StoreCategory {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+  sortOrder: number;
+}
+
 interface GraphqlResponse<T> {
   data?: T;
   errors?: Array<{ message: string }>;
@@ -202,6 +210,21 @@ export async function getProducts(): Promise<Product[]> {
     items.map((product) => getProductStock(product.id).catch(() => undefined))
   );
   return items.map((product, index) => toProduct(product, stocks[index]));
+}
+
+export async function getCategories(): Promise<StoreCategory[]> {
+  const data = await graphqlFetch<{ storefrontCategories: StoreCategory[] }>(
+    `query StorefrontCategories {
+      storefrontCategories {
+        id
+        name
+        slug
+        parentId
+        sortOrder
+      }
+    }`
+  );
+  return data.storefrontCategories;
 }
 
 export async function getProduct(id: string): Promise<Product> {
