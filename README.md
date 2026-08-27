@@ -41,8 +41,10 @@ npm run build
 
 ## storekit について
 
-現在 `src/lib/storekit.ts` に bakuure API の抽象レイヤーを実装しています。
-[bakuure-storekit](https://github.com/quantum-box/bakuure-storekit) が公開された後、import を差し替えます。
+`src/lib/storekit.ts` は `@tachyon-sdk/storekit` を使うショップ向けの抽象レイヤーです。
+商品一覧は `/api/storefront/products` の Pages Function で商品ごとの在庫を集約し、
+60 秒キャッシュしてからブラウザへ返します。注文照会だけは SDK に
+`paymentStatus` が追加されるまで、自前 GraphQL 経路を残しています (`PLT-3986`)。
 
 ## デプロイ
 

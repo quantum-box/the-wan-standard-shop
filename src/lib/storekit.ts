@@ -1,42 +1,12 @@
-/**
- * Abstraction layer for bakuure-storekit.
- * Replace with `import { ... } from 'bakuure-storekit'` once the SDK is published.
- * See: https://github.com/quantum-box/bakuure-storekit (WIP)
- */
+import type { Cart as StorekitCart } from "@tachyon-sdk/storekit";
+import { FIELD_GRAPHQL_URL, OPERATOR_ID, storekit } from "./storekit-client";
+import { toProduct, type Product } from "./storekit-product";
 
-// The static export bakes this production origin into the client bundle at build time.
-// Runtime Cloud App environment variables are intentionally not read here.
-const API_BASE = "https://tachyon-field-api.txcloud.app";
-const OPERATOR_ID = "tn_01kptmrtgnm746m5mpr78e2esd";
-const STORAGE_CDN_BASE = "https://cdn.txcloud.app";
-
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  imageUrl: string | null;
-  stock: number;
-  category: string | null;
-}
+export type { Product } from "./storekit-product";
 
 interface GraphqlResponse<T> {
   data?: T;
   errors?: Array<{ message: string }>;
-}
-
-interface StorefrontProduct {
-  id: string;
-  name: string;
-  description: string | null;
-  listPrice: number;
-  imageIds: string[];
-  categoryId: string | null;
-}
-
-interface ProductStock {
-  quantityAvailable: number;
-  trackInventory: boolean;
 }
 
 export interface CartItem {
@@ -58,22 +28,6 @@ export interface OrderInput {
   email?: string;
 }
 
-interface GqlCartItem {
-  id: string;
-  productId: string;
-  quantity: number;
-}
-
-interface GqlCart {
-  id: string;
-  items: GqlCartItem[];
-}
-
-interface GqlConsumerOrder {
-  id: string;
-  checkoutUrl: string | null;
-}
-
 export interface OrderLookupItem {
   id: string;
   productName: string;
@@ -93,16 +47,17 @@ export interface OrderLookupResult {
 }
 
 interface GqlOrderLookupPayload {
-  order: OrderLookupResult;
   lookupToken: string;
-  expiresAt: string;
 }
 
-async function graphqlFetch<T>(
+// PLT-3986 待ち: SDK の ConsumerOrder に paymentStatus が無く、
+// status/paymentMethod/confirmedAt からは導出できない（反例あり）。
+// landed 後に注文照会を SDK へ移し、この自前 GraphQL 経路を削除する。
+async function lookupGraphqlFetch<T>(
   query: string,
   variables?: Record<string, unknown>
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}/v1/graphql`, {
+  const res = await fetch(FIELD_GRAPHQL_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -121,25 +76,6 @@ async function graphqlFetch<T>(
   return payload.data;
 }
 
-function imageIdToUrl(imageId: string | undefined): string | null {
-  if (!imageId) return null;
-  if (imageId.startsWith("http://") || imageId.startsWith("https://")) return imageId;
-  const key = imageId.replace(/^\/+/, "");
-  return `${STORAGE_CDN_BASE}/cdn-cgi/image/w=800,q=80,f=auto/${key}`;
-}
-
-function toProduct(product: StorefrontProduct, stock?: ProductStock): Product {
-  return {
-    id: product.id,
-    name: product.name,
-    description: product.description ?? "",
-    price: product.listPrice,
-    imageUrl: imageIdToUrl(product.imageIds[0]),
-    stock: stock?.trackInventory ? stock.quantityAvailable : 99,
-    category: product.categoryId,
-  };
-}
-
 function getSessionId(): string {
   if (typeof window === "undefined") return crypto.randomUUID();
   let sid = localStorage.getItem("tws_session_id");
@@ -150,9 +86,9 @@ function getSessionId(): string {
   return sid;
 }
 
-async function enrichCart(gqlCart: GqlCart): Promise<Cart> {
+async function enrichCart(cart: StorekitCart): Promise<Cart> {
   const items = await Promise.all(
-    gqlCart.items.map(async (item) => {
+    cart.items.map(async (item) => {
       const product = await getProduct(item.productId);
       return {
         itemId: item.id,
@@ -162,88 +98,27 @@ async function enrichCart(gqlCart: GqlCart): Promise<Cart> {
       };
     })
   );
-  return { id: gqlCart.id, items };
-}
-
-async function getProductStock(productId: string): Promise<ProductStock | undefined> {
-  const data = await graphqlFetch<{ productStock: ProductStock | null }>(
-    `query ProductStock($productId: ID!) {
-      productStock(productId: $productId) {
-        quantityAvailable
-        trackInventory
-      }
-    }`,
-    { productId }
-  );
-  return data.productStock ?? undefined;
+  return { id: cart.id, items };
 }
 
 export async function getProducts(): Promise<Product[]> {
-  const data = await graphqlFetch<{
-    storefrontProducts: { items: StorefrontProduct[] };
-  }>(
-    `query StorefrontProducts($limit: Int!, $offset: Int!) {
-      storefrontProducts(limit: $limit, offset: $offset) {
-        items {
-          id
-          name
-          description
-          listPrice
-          imageIds
-          categoryId
-        }
-      }
-    }`,
-    { limit: 100, offset: 0 }
-  );
-
-  const items = data.storefrontProducts.items;
-  const stocks = await Promise.all(
-    items.map((product) => getProductStock(product.id).catch(() => undefined))
-  );
-  return items.map((product, index) => toProduct(product, stocks[index]));
+  const response = await fetch("/api/storefront/products", {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error(`Storefront products error: ${response.status}`);
+  }
+  const payload = (await response.json()) as { products: Product[] };
+  return payload.products;
 }
 
 export async function getProduct(id: string): Promise<Product> {
-  const data = await graphqlFetch<{
-    storefrontProduct: StorefrontProduct;
-    productStock: ProductStock;
-  }>(
-    `query StorefrontProduct($productId: ID!) {
-      storefrontProduct(productId: $productId) {
-        id
-        name
-        description
-        listPrice
-        imageIds
-        categoryId
-      }
-      productStock(productId: $productId) {
-        quantityAvailable
-        trackInventory
-      }
-    }`,
-    { productId: id }
-  );
-
-  return toProduct(data.storefrontProduct, data.productStock);
+  const { product, stock } = await storekit.storefront.getWithStock(id);
+  return toProduct(product, stock);
 }
 
 export async function getCart(cartId: string): Promise<Cart> {
-  const data = await graphqlFetch<{ cart: GqlCart }>(
-    `query GetCart($cartId: ID!) {
-      cart(cartId: $cartId) {
-        id
-        items {
-          id
-          productId
-          quantity
-        }
-      }
-    }`,
-    { cartId }
-  );
-  return enrichCart(data.cart);
+  return enrichCart(await storekit.cart.get(cartId));
 }
 
 export async function addToCart(
@@ -255,32 +130,12 @@ export async function addToCart(
 
   if (!actualCartId) {
     const sessionId = getSessionId();
-    const createData = await graphqlFetch<{ createCart: { id: string } }>(
-      `mutation CreateCart($sessionId: String) {
-        createCart(input: { sessionId: $sessionId }) {
-          id
-        }
-      }`,
-      { sessionId }
-    );
-    actualCartId = createData.createCart.id;
+    actualCartId = (await storekit.cart.create({ sessionId })).id;
   }
 
-  const data = await graphqlFetch<{ addCartItem: GqlCart }>(
-    `mutation AddCartItem($cartId: ID!, $productId: String!, $quantity: Int!) {
-      addCartItem(cartId: $cartId, input: { productId: $productId, quantity: $quantity }) {
-        id
-        items {
-          id
-          productId
-          quantity
-        }
-      }
-    }`,
-    { cartId: actualCartId, productId, quantity }
+  return enrichCart(
+    await storekit.cart.addItem(actualCartId, { productId, quantity })
   );
-
-  return enrichCart(data.addCartItem);
 }
 
 export async function updateCartItem(
@@ -288,59 +143,33 @@ export async function updateCartItem(
   itemId: string,
   quantity: number
 ): Promise<Cart> {
-  const data = await graphqlFetch<{ updateCartItem: GqlCart }>(
-    `mutation UpdateCartItem($cartId: ID!, $itemId: ID!, $quantity: Int!) {
-      updateCartItem(cartId: $cartId, itemId: $itemId, input: { quantity: $quantity }) {
-        id
-        items {
-          id
-          productId
-          quantity
-        }
-      }
-    }`,
-    { cartId, itemId, quantity }
+  return enrichCart(
+    await storekit.cart.updateItem(cartId, itemId, { quantity })
   );
-  return enrichCart(data.updateCartItem);
 }
 
 export async function removeCartItem(
   cartId: string,
   itemId: string
 ): Promise<Cart> {
-  await graphqlFetch<{ removeCartItem: boolean }>(
-    `mutation RemoveCartItem($cartId: ID!, $itemId: ID!) {
-      removeCartItem(cartId: $cartId, itemId: $itemId)
-    }`,
-    { cartId, itemId }
-  );
+  await storekit.cart.removeItem(cartId, itemId);
   return getCart(cartId);
 }
 
 export async function createOrder(
   input: OrderInput
 ): Promise<{ id: string; checkoutUrl: string | null }> {
-  const data = await graphqlFetch<{ checkout: GqlConsumerOrder }>(
-    `mutation Checkout($input: CheckoutInput!) {
-      checkout(input: $input) {
-        id
-        checkoutUrl
-      }
-    }`,
-    {
-      input: {
-        cartId: input.cartId,
-        fulfillmentMethod: "pickup",
-        paymentMethod: "in_store",
-        shippingName: input.name,
-        shippingPhone: input.phone,
-        customerEmail: input.email,
-      },
-    }
-  );
+  const order = await storekit.cart.checkout({
+    cartId: input.cartId,
+    fulfillmentMethod: "pickup",
+    paymentMethod: "in_store",
+    shippingName: input.name,
+    shippingPhone: input.phone,
+    customerEmail: input.email,
+  });
   return {
-    id: data.checkout.id,
-    checkoutUrl: data.checkout.checkoutUrl ?? null,
+    id: order.id,
+    checkoutUrl: order.checkoutUrl ?? null,
   };
 }
 
@@ -349,7 +178,7 @@ export async function getOrderByLookup(input: {
   lastDigits: string;
 }): Promise<OrderLookupResult | null> {
   try {
-    const lookupData = await graphqlFetch<{
+    const lookupData = await lookupGraphqlFetch<{
       consumerOrderByLookup: GqlOrderLookupPayload;
     }>(
       `mutation ConsumerOrderByLookup($input: ConsumerOrderLookupInput!) {
@@ -363,7 +192,7 @@ export async function getOrderByLookup(input: {
       { input }
     );
 
-    const detailData = await graphqlFetch<{
+    const detailData = await lookupGraphqlFetch<{
       consumerOrderByLookupToken: OrderLookupResult | null;
     }>(
       `query ConsumerOrderByLookupToken($lookupToken: String!) {
