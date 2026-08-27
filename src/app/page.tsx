@@ -4,6 +4,7 @@ import { BrandLockup } from '@/components/BrandLockup'
 import Nav from '@/components/Nav'
 import ScenesSection from '@/components/ScenesSection'
 import UseCaseCards from '@/components/UseCaseCards'
+import FeaturedProductsMock from '@/components/FeaturedProductsMock'
 
 export default function Home() {
   return (
@@ -97,6 +98,11 @@ export default function Home() {
           USE CASE DISCOVERY
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <UseCaseCards />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          FEATURED PRODUCTS MOCK
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <FeaturedProductsMock />
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           SCENE CAROUSEL SECTION
