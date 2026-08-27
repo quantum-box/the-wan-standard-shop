@@ -7,12 +7,13 @@
     "dev": "next dev",
     "prebuild": "npm test",
     "build": "next build && npm run build:functions",
-    "build:functions": "npx --yes wrangler@4.100.0 pages functions build functions --outdir out/_worker.js --project-directory . --build-output-directory out --compatibility-date 2024-12-30 --compatibility-flags nodejs_compat --minify",
-    "postbuild": "npm run scan:retired-origins",
+    "build:functions": "npx --yes wrangler@4.100.0 pages functions build functions --outdir out/_worker.js --project-directory . --build-output-directory out --compatibility-date 2024-12-30 --minify",
+    "postbuild": "npm run scan:retired-origins && npm run scan:pages-worker",
     "start": "next start",
     "lint": "eslint",
     "test": "NEXT_PUBLIC_API_BASE_URL=https://bakuure.api.n1.tachy.one/ playwright test tests/storekit-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts tests/storekit-sdk-migration.spec.ts",
-    "scan:retired-origins": "node scripts/check-retired-origins.mjs out"
+    "scan:retired-origins": "node scripts/check-retired-origins.mjs out",
+    "scan:pages-worker": "node scripts/check-pages-worker.mjs out/_worker.js/index.js"
   },
   "dependencies": {
     "@tachyon-sdk/storekit": "0.3.1",

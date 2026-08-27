@@ -1,5 +1,6 @@
 import type { Cart as StorekitCart } from "@tachyon-sdk/storekit";
-import { FIELD_GRAPHQL_URL, OPERATOR_ID, storekit } from "./storekit-client";
+import { storekit } from "./storekit-client";
+import { FIELD_GRAPHQL_URL, OPERATOR_ID } from "./storekit-config";
 import { toProduct, type Product } from "./storekit-product";
 
 export type { Product } from "./storekit-product";

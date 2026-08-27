@@ -1,4 +1,4 @@
-import { storekit } from "./storekit-client";
+import { storefront } from "./storefront-client-server";
 import { toProduct, type Product } from "./storekit-product";
 
 /**
@@ -6,11 +6,11 @@ import { toProduct, type Product } from "./storekit-product";
  * client code must call the aggregate endpoint exposed by getProducts().
  */
 export async function getProductsWithStockUncached(): Promise<Product[]> {
-  const { items } = await storekit.storefront.list({ limit: 100, offset: 0 });
+  const { items } = await storefront.list({ limit: 100, offset: 0 });
   const productsWithStock = await Promise.all(
     items.map(async (listedProduct) => {
       try {
-        return await storekit.storefront.getWithStock(listedProduct.id);
+        return await storefront.getWithStock(listedProduct.id);
       } catch {
         return { product: listedProduct, stock: undefined };
       }
