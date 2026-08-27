@@ -1,4 +1,5 @@
 import type { Cart } from "@/lib/storekit";
+import type { CheckoutPaymentMethod, FulfillmentMethod } from "@/lib/checkout-storage";
 
 const PREFIX = "tws_order_receipt:";
 
@@ -9,7 +10,10 @@ export interface OrderReceipt {
   phone: string;
   email?: string;
   createdAt: string;
-  pickupDeadline: string;
+  fulfillmentMethod?: FulfillmentMethod;
+  paymentMethod?: CheckoutPaymentMethod;
+  deliveryAddress?: string;
+  pickupDeadline?: string;
 }
 
 export function saveOrderReceipt(receipt: OrderReceipt): void {
@@ -21,6 +25,10 @@ export function getOrderReceipt(orderId: string): OrderReceipt | null {
   if (typeof window === "undefined") return null;
   const raw = sessionStorage.getItem(`${PREFIX}${orderId}`);
   if (!raw) return null;
-  try { return JSON.parse(raw) as OrderReceipt; }
-  catch { sessionStorage.removeItem(`${PREFIX}${orderId}`); return null; }
+  try {
+    return JSON.parse(raw) as OrderReceipt;
+  } catch {
+    sessionStorage.removeItem(`${PREFIX}${orderId}`);
+    return null;
+  }
 }
