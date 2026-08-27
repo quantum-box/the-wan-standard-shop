@@ -2,16 +2,30 @@ import type { Cart } from "@/lib/storekit";
 
 const CHECKOUT_DRAFT_KEY = "tws_checkout_draft";
 
+export type FulfillmentMethod = "pickup" | "delivery";
+export type CheckoutPaymentMethod = "in_store" | "online";
+
 export interface CheckoutContact {
   name: string;
   phone: string;
   email: string;
 }
 
+export interface DeliveryAddress {
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  addressLine1: string;
+  addressLine2: string;
+}
+
 export interface CheckoutDraft {
   cartId: string;
   contact: CheckoutContact;
   cart: Cart;
+  fulfillmentMethod?: FulfillmentMethod;
+  paymentMethod?: CheckoutPaymentMethod;
+  deliveryAddress?: DeliveryAddress;
   savedAt: string;
 }
 
