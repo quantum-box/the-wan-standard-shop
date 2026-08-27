@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "prebuild": "npm test",
-    "build": "next build",
+    "build": "next build && npm run build:functions",
+    "build:functions": "npx --yes wrangler@4.100.0 pages functions build functions --outdir out/_worker.js --project-directory . --build-output-directory out --compatibility-date 2024-12-30 --compatibility-flags nodejs_compat --minify",
     "postbuild": "npm run scan:retired-origins",
     "start": "next start",
     "lint": "eslint",

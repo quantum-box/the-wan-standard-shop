@@ -45,6 +45,8 @@ npm run build
 商品一覧は `/api/storefront/products` の Pages Function で商品ごとの在庫を集約し、
 60 秒キャッシュしてからブラウザへ返します。注文照会だけは SDK に
 `paymentStatus` が追加されるまで、自前 GraphQL 経路を残しています (`PLT-3986`)。
+`npm run build` は Pages Function を `out/_worker.js/index.js` に bundle し、静的成果物と
+同じ Cloudflare Pages deployment に含めます。
 
 ## デプロイ
 
