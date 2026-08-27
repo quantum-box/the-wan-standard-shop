@@ -9,7 +9,7 @@
     "postbuild": "npm run scan:retired-origins",
     "start": "next start",
     "lint": "eslint",
-    "test": "NEXT_PUBLIC_API_BASE_URL=https://bakuure.api.n1.tachy.one/ playwright test tests/storekit-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts",
+    "test": "NEXT_PUBLIC_API_BASE_URL=https://bakuure.api.n1.tachy.one/ playwright test tests/storekit-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts tests/commerce-resilience.spec.ts",
     "scan:retired-origins": "node scripts/check-retired-origins.mjs out"
   },
   "dependencies": {
