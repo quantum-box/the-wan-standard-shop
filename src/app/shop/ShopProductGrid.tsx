@@ -28,8 +28,11 @@ export function ShopProductGrid() {
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("category");
-    if (requested) setSelectedSlug(requested);
-    void load();
+    const timeoutId = window.setTimeout(() => {
+      if (requested) setSelectedSlug(requested);
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [load]);
 
   const categoryById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);

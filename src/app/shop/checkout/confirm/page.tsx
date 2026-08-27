@@ -43,7 +43,10 @@ export default function CheckoutConfirmPage() {
   const [error, setError] = useState<string | null>(null);
   const submittedRef = useRef(false);
 
-  useEffect(() => { setDraft(getCheckoutDraft()); }, []);
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDraft(getCheckoutDraft()), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   async function validateCart(checkoutDraft: CheckoutDraft): Promise<void> {
     const latest = await getCart(checkoutDraft.cartId);

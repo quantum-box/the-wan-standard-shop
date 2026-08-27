@@ -32,13 +32,16 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const draft = getCheckoutDraft();
-    const cartId = getCartId();
-    if (!draft || draft.cartId !== cartId) return;
-    setContact(draft.contact);
-    setFulfillmentMethod(draft.fulfillmentMethod ?? "pickup");
-    setPaymentMethod(draft.paymentMethod ?? "in_store");
-    if (draft.deliveryAddress) setDeliveryAddress(draft.deliveryAddress);
+    const timeoutId = window.setTimeout(() => {
+      const draft = getCheckoutDraft();
+      const cartId = getCartId();
+      if (!draft || draft.cartId !== cartId) return;
+      setContact(draft.contact);
+      setFulfillmentMethod(draft.fulfillmentMethod ?? "pickup");
+      setPaymentMethod(draft.paymentMethod ?? "in_store");
+      if (draft.deliveryAddress) setDeliveryAddress(draft.deliveryAddress);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   function handleContactChange(event: React.ChangeEvent<HTMLInputElement>) {

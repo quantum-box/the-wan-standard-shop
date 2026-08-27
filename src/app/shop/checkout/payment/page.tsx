@@ -11,9 +11,10 @@ export default function PaymentResultPage() {
     const params = new URLSearchParams(window.location.search);
     const next = params.get("status") ?? "cancelled";
     const cartId = params.get("cart");
-    setStatus(next);
+    const timeoutId = window.setTimeout(() => setStatus(next), 0);
     if (cartId) clearPaymentAttempt(cartId);
     clearPendingPaymentOrder();
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const failed = status === "failed";

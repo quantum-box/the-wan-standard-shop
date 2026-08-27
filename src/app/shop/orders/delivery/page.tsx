@@ -24,7 +24,13 @@ function statusLabel(status: string) {
 
 export default function DeliveryOrderPage() {
   const [order, setOrder] = useState<ExtendedOrderLookupResult | null>(null);
-  useEffect(() => setOrder(getDeliveryOrderView()), []);
+  useEffect(() => {
+    const timeoutId = window.setTimeout(
+      () => setOrder(getDeliveryOrderView()),
+      0
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   if (!order) {
     return <div className="max-w-xl py-8"><h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">Delivery Status</h1><p className="text-sm text-n1 mb-5">表示する配送注文がありません。注文照会から確認してください。</p><Link href="/shop/orders/lookup" className="text-sm text-p2 underline">注文を照会する</Link></div>;

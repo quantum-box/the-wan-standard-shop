@@ -13,7 +13,7 @@ function paymentLabel(status: string) { const labels:Record<string,string>={pend
 export default function OrderDetailPage() {
   const [order,setOrder]=useState<OrderLookupResult|null>(null);
   const [orderId,setOrderId]=useState("");
-  useEffect(()=>{const id=new URLSearchParams(window.location.search).get("order")??"";setOrderId(id);if(id)setOrder(getOrderView(id));},[]);
+  useEffect(()=>{const id=new URLSearchParams(window.location.search).get("order")??"";const timeoutId=window.setTimeout(()=>{setOrderId(id);if(id)setOrder(getOrderView(id));},0);return()=>window.clearTimeout(timeoutId);},[]);
   const pickupDeadline=useMemo(()=>{if(!order)return null;const date=new Date(order.createdAt);date.setDate(date.getDate()+7);return date;},[order]);
   if(!order) return <div className="max-w-xl py-8"><h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">Order Detail</h1><p className="text-sm text-n1 mb-5">{orderId?"この端末に注文詳細がありません。もう一度注文照会を行ってください。":"表示する注文が指定されていません。"}</p><Link href="/shop/orders/lookup" className="text-sm text-p2 underline">注文を照会する</Link></div>;
   return <div className="max-w-2xl">

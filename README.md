@@ -76,31 +76,32 @@ npm run dev
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | 任意 | Google Analytics の Measurement ID。未設定時はスクリプトを読み込みません。 |
 | `NEXT_PUBLIC_LINE_URL` | 任意 | `/thanks` で使用する LINE URL。未設定時は既定値を使用します。 |
 
-ストアフロントの API オリジンとオペレーター ID は、静的出力へ確実に反映するため `src/lib/storekit.ts` の定数として管理しています。`NEXT_PUBLIC_API_BASE_URL` と `NEXT_PUBLIC_OPERATOR_ID` は現在使用していません。
+ストアフロントの API オリジンとオペレーター ID は、静的出力へ確実に反映するため `src/lib/storekit-config.ts` の定数として管理しています。`NEXT_PUBLIC_API_BASE_URL` と `NEXT_PUBLIC_OPERATOR_ID` は現在使用していません。
 
-接続先を変更する場合は、`src/lib/storekit.ts` と接続先を検証するテストを同時に更新してください。
+接続先を変更する場合は、`src/lib/storekit-config.ts` と接続先を検証するテストを同時に更新してください。
 
 ## コマンド
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバーを起動 |
+| `npm run dev` | Next.js と Pages Functions を同一 origin の開発サーバーで起動 |
 | `npm run lint` | ESLint を実行 |
-| `npm test` | API オリジンとビルド成果物スキャンのテストを実行 |
-| `npm run build` | テスト、静的ビルド、廃止済みオリジンのスキャンを順番に実行 |
+| `npm test` | API オリジン、EC の耐障害性、SDK 移行、ビルド成果物スキャンのテストを実行 |
+| `npm run build` | テスト、静的ビルド、Pages Function の bundle、成果物スキャンを順番に実行 |
 | `npm run scan:retired-origins` | `out/` に廃止済みオリジンが含まれていないか検査 |
+| `npm run scan:pages-worker` | Pages Worker に Node.js 専用 import がなく、集約 API が含まれることを検査 |
 
 `npm run build` では次の処理が自動的に実行されます。
 
 1. `prebuild`: `npm test`
-2. `build`: `next build`
-3. `postbuild`: `npm run scan:retired-origins`
+2. `build`: `next build` と `npm run build:functions`
+3. `postbuild`: 廃止済みオリジンと Pages Worker をスキャン
 
 廃止済み API オリジンは `config/retired-origins.txt` で管理します。
 
 ## API・ストア機能
 
-`src/lib/storekit.ts` が **TACHYON Field GraphQL API** の storefront 向け抽象レイヤーです。現在は GraphQL API を直接呼び出し、次の処理を提供しています。
+`src/lib/storekit.ts` が **TACHYON Field GraphQL API** の storefront 向け抽象レイヤーです。`@tachyon-sdk/storekit` を利用し、次の処理を提供しています。
 
 - 商品一覧・商品詳細の取得
 - 在庫数の取得
@@ -109,7 +110,7 @@ npm run dev
 - ゲスト注文照会
 - 商品画像 ID から CDN URL への変換
 
-現在の API エンドポイントは以下です。
+注文照会だけは SDK の `ConsumerOrder` に `paymentStatus` が追加されるまで、自前 GraphQL 経路を残しています（`PLT-3986`）。現在の API エンドポイントは以下です。
 
 ```text
 https://tachyon-field-api.txcloud.app/v1/graphql
@@ -119,12 +120,25 @@ https://tachyon-field-api.txcloud.app/v1/graphql
 
 静的出力では商品詳細ルートを事前生成するため、商品を追加した際は `src/app/shop/[id]/page.tsx` の `PRODUCT_IDS` に商品 ID を追加してください。未登録の商品 ID は商品詳細ページとして出力されません。
 
+### 商品一覧の集約 API
+
+商品一覧は `/api/storefront/products` の Pages Function で商品ごとの在庫を集約し、
+在庫の鮮度と Field API の負荷を釣り合わせるため 60 秒キャッシュしてからブラウザへ返します。
+ブラウザからは集約 API を1回だけ呼び、商品単位の在庫リクエストは送信しません。
+`npm run build` は Pages Function を `out/_worker.js/index.js` に bundle し、静的成果物と
+同じ Cloudflare Pages deployment に含めます。
+
+`npm run dev` では開発専用の custom server が Next.js を配信し、
+`/api/storefront/products` だけをローカル Wrangler Pages Functions runtime へ中継します。
+production の静的 export とデプロイ設定には影響しません。
+
 ## ディレクトリ構成
 
 ```text
 .
 ├── config/             # 廃止済みオリジンなどの設定
 ├── docs/               # ブランド・タスク関連資料
+├── functions/          # Cloudflare Pages Functions
 ├── public/             # 画像、OGP、リダイレクト設定など
 ├── scripts/            # ビルド成果物の検査スクリプト
 ├── src/
@@ -140,7 +154,7 @@ Tachyon Cloud App プラットフォームからデプロイします。
 
 - Build command: `npm run build`
 - Output directory: `out`
-- API 接続設定: `src/lib/storekit.ts` に含めて静的ビルド
+- API 接続設定: `src/lib/storekit-config.ts` に含めて静的ビルド
 - 任意の build-time environment variables: `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `NEXT_PUBLIC_LINE_URL`
 
 GitHub Actions からの Cloudflare Pages 自動デプロイや、`CLOUDFLARE_API_TOKEN` などの Cloudflare API クレデンシャルは使用しません。

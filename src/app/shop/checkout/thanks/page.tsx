@@ -27,14 +27,18 @@ export default function ThanksPage() {
     const queryId = new URLSearchParams(window.location.search).get("order") ?? "";
     const pending = getPendingPaymentOrder();
     const id = queryId || pending?.orderId || "";
-    setOrderId(id);
-    if (id) setReceipt(getOrderReceipt(id));
+    const nextReceipt = id ? getOrderReceipt(id) : null;
+    const timeoutId = window.setTimeout(() => {
+      setOrderId(id);
+      setReceipt(nextReceipt);
+    }, 0);
     if (pending) {
       clearPaymentAttempt(pending.cartId);
       clearPendingPaymentOrder();
       clearCartId();
       clearCheckoutDraft();
     }
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const total = useMemo(() => receipt?.cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) ?? 0, [receipt]);
