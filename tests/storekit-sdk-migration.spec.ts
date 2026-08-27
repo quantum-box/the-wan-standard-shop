@@ -46,7 +46,7 @@ function graphqlResponse(data: unknown): Response {
   });
 }
 
-test("the aggregate Pages Function runs list + stock fan-out once per TTL", async () => {
+test("the aggregate Pages Function normalizes query parameters and runs stock fan-out once per TTL", async () => {
   const originalFetch = globalThis.fetch;
   const originalCaches = Object.getOwnPropertyDescriptor(globalThis, "caches");
   const upstreamQueries: string[] = [];
@@ -82,14 +82,16 @@ test("the aggregate Pages Function runs list + stock fan-out once per TTL", asyn
 
   try {
     const pending: Promise<unknown>[] = [];
-    const context = {
-      request: new Request("https://thewanstandard.jp/api/storefront/products"),
+    const contextFor = (query: string) => ({
+      request: new Request(
+        `https://thewanstandard.jp/api/storefront/products?${query}`
+      ),
       waitUntil(promise: Promise<unknown>) {
         pending.push(promise);
       },
-    };
+    });
 
-    const firstResponse = await onRequestGet(context);
+    const firstResponse = await onRequestGet(contextFor("bust=first"));
     expect(firstResponse.status).toBe(200);
     expect(firstResponse.headers.get("Cache-Control")).toBe(
       "public, max-age=60, s-maxage=60"
@@ -111,9 +113,12 @@ test("the aggregate Pages Function runs list + stock fan-out once per TTL", asyn
     await Promise.all(pending);
     expect(upstreamQueries).toHaveLength(2);
 
-    const cachedResponse = await onRequestGet(context);
+    const cachedResponse = await onRequestGet(contextFor("bust=second"));
     expect(cachedResponse.status).toBe(200);
     expect(upstreamQueries).toHaveLength(2);
+    expect([...cachedResponses.keys()]).toEqual([
+      "https://thewanstandard.jp/api/storefront/products",
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalCaches) {

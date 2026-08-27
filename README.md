@@ -84,7 +84,7 @@ npm run dev
 
 | コマンド | 内容 |
 |---|---|
-| `npm run dev` | 開発サーバーを起動 |
+| `npm run dev` | Next.js と Pages Functions を同一 origin の開発サーバーで起動 |
 | `npm run lint` | ESLint を実行 |
 | `npm test` | API オリジン、EC の耐障害性、SDK 移行、ビルド成果物スキャンのテストを実行 |
 | `npm run build` | テスト、静的ビルド、Pages Function の bundle、成果物スキャンを順番に実行 |
@@ -127,6 +127,10 @@ https://tachyon-field-api.txcloud.app/v1/graphql
 ブラウザからは集約 API を1回だけ呼び、商品単位の在庫リクエストは送信しません。
 `npm run build` は Pages Function を `out/_worker.js/index.js` に bundle し、静的成果物と
 同じ Cloudflare Pages deployment に含めます。
+
+`npm run dev` では開発専用の custom server が Next.js を配信し、
+`/api/storefront/products` だけをローカル Wrangler Pages Functions runtime へ中継します。
+production の静的 export とデプロイ設定には影響しません。
 
 ## ディレクトリ構成
 

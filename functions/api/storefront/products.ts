@@ -9,6 +9,11 @@ interface PagesFunctionContext {
 
 type CloudflareCacheStorage = CacheStorage & { default: Cache };
 
+function aggregateCacheKey(requestUrl: string): Request {
+  const url = new URL("/api/storefront/products", requestUrl);
+  return new Request(url, { method: "GET" });
+}
+
 function jsonResponse(body: unknown, init: ResponseInit): Response {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json; charset=utf-8");
@@ -19,7 +24,7 @@ export async function onRequestGet(
   context: PagesFunctionContext
 ): Promise<Response> {
   const cache = (globalThis.caches as CloudflareCacheStorage).default;
-  const cacheKey = new Request(context.request.url, { method: "GET" });
+  const cacheKey = aggregateCacheKey(context.request.url);
   const cachedResponse = await cache.match(cacheKey);
   if (cachedResponse) return cachedResponse;
 

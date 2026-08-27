@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
     "prebuild": "npm test",
     "build": "next build && npm run build:functions",
     "build:functions": "npx --yes wrangler@4.100.0 pages functions build functions --outdir out/_worker.js --project-directory . --build-output-directory out --compatibility-date 2024-12-30 --minify",
