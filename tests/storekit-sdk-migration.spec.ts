@@ -6,6 +6,7 @@ import {
   addToCart,
   createOrder,
   getCart,
+  getCategories,
   getOrderByLookup,
   getProducts,
   removeCartItem,
@@ -138,6 +139,35 @@ test("the product grid client makes one request to the aggregate endpoint", asyn
   try {
     await expect(getProducts()).resolves.toEqual([]);
     expect(requestedUrls).toEqual(["/api/storefront/products"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("categories use the SDK storefront operation", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestBody = "";
+
+  globalThis.fetch = async (_input, init) => {
+    requestBody = String(init?.body);
+    return graphqlResponse({
+      storefrontCategories: [
+        { id: "bowls", name: "Bowls", slug: "bowls" },
+      ],
+    });
+  };
+
+  try {
+    await expect(getCategories()).resolves.toEqual([
+      {
+        id: "bowls",
+        name: "Bowls",
+        slug: "bowls",
+        parentId: null,
+        sortOrder: 0,
+      },
+    ]);
+    expect(requestBody).toContain("query StorefrontCategories");
   } finally {
     globalThis.fetch = originalFetch;
   }

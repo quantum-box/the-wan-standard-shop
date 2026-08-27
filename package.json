@@ -1,6 +1,6 @@
 {
   "name": "the-wan-standard-shop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "postbuild": "npm run scan:retired-origins && npm run scan:pages-worker",
     "start": "next start",
     "lint": "eslint",
-    "test": "NEXT_PUBLIC_API_BASE_URL=https://bakuure.api.n1.tachy.one/ playwright test tests/storekit-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts tests/storekit-sdk-migration.spec.ts",
+    "test": "NEXT_PUBLIC_API_BASE_URL=https://bakuure.api.n1.tachy.one/ playwright test tests/storekit-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts tests/commerce-resilience.spec.ts tests/storekit-sdk-migration.spec.ts",
     "scan:retired-origins": "node scripts/check-retired-origins.mjs out",
     "scan:pages-worker": "node scripts/check-pages-worker.mjs out/_worker.js/index.js"
   },

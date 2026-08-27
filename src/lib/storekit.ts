@@ -5,6 +5,14 @@ import { toProduct, type Product } from "./storekit-product";
 
 export type { Product } from "./storekit-product";
 
+export interface StoreCategory {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+  sortOrder: number;
+}
+
 interface GraphqlResponse<T> {
   data?: T;
   errors?: Array<{ message: string }>;
@@ -109,8 +117,28 @@ export async function getProducts(): Promise<Product[]> {
   if (!response.ok) {
     throw new Error(`Storefront products error: ${response.status}`);
   }
-  const payload = (await response.json()) as { products: Product[] };
+  const payload = (await response.json()) as {
+    products?: Product[];
+    error?: string;
+    errors?: Array<{ message: string }>;
+  };
+  if (!Array.isArray(payload.products)) {
+    const message =
+      payload.error ??
+      payload.errors?.map((error) => error.message).join("; ") ??
+      "Storefront products error: invalid response";
+    throw new Error(message);
+  }
   return payload.products;
+}
+
+export async function getCategories(): Promise<StoreCategory[]> {
+  const categories = await storekit.storefront.categories();
+  return categories.map((category, index) => ({
+    ...category,
+    parentId: null,
+    sortOrder: index,
+  }));
 }
 
 export async function getProduct(id: string): Promise<Product> {
