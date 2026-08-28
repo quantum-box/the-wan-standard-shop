@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getCart } from "@/lib/storekit";
+import { getCart, isRateLimited, previewCoupon, type CouponPreview } from "@/lib/storekit";
 import { getCartId } from "@/lib/cart-storage";
 import {
   getCheckoutDraft,
@@ -13,6 +13,15 @@ import {
   type DeliveryAddress,
   type FulfillmentMethod,
 } from "@/lib/checkout-storage";
+
+type CouponState =
+  | "idle"
+  | "checking"
+  | "applied"
+  | "rejected"
+  | "stale"
+  | "busy"
+  | "error";
 
 const EMPTY_ADDRESS: DeliveryAddress = {
   postalCode: "",
@@ -30,8 +39,12 @@ export default function CheckoutPage() {
   const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress>(EMPTY_ADDRESS);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState<CouponPreview | null>(null);
+  const [couponState, setCouponState] = useState<CouponState>("idle");
 
   useEffect(() => {
+    let canceled = false;
     const timeoutId = window.setTimeout(() => {
       const draft = getCheckoutDraft();
       const cartId = getCartId();
@@ -40,9 +53,55 @@ export default function CheckoutPage() {
       setFulfillmentMethod(draft.fulfillmentMethod ?? "pickup");
       setPaymentMethod(draft.paymentMethod ?? "in_store");
       if (draft.deliveryAddress) setDeliveryAddress(draft.deliveryAddress);
+
+      const restored = draft.coupon;
+      if (!restored) return;
+      setCoupon(restored);
+      setCouponCode(restored.code);
+      setCouponState("applied");
+      // The cart identifier survives a trip back to the cart page, so a
+      // restored preview can describe a cart that no longer exists. Checking
+      // the subtotal costs a cart read rather than one of the 20/min coupon
+      // attempts, so it is safe to do on load.
+      void getCart(cartId)
+        .then((cart) => {
+          if (canceled || cart.subtotal === restored.subtotal) return;
+          setCoupon(null);
+          setCouponState("stale");
+        })
+        .catch(() => {
+          // Leave the restored preview alone; submit re-prices it anyway.
+        });
     }, 0);
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      canceled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, []);
+
+  // Applied on an explicit press, never as the shopper types: attempts run on
+  // their own 20/min tenant budget, and Field answers every rejection — unknown
+  // code, expired, under the minimum — with the same 404.
+  async function handleApplyCoupon() {
+    const code = couponCode.trim();
+    const cartId = getCartId();
+    if (!code || !cartId || couponState === "checking") return;
+    setCouponState("checking");
+    try {
+      const preview = await previewCoupon(cartId, code);
+      setCoupon(preview);
+      setCouponState(preview ? "applied" : "rejected");
+    } catch (cause) {
+      setCoupon(null);
+      setCouponState(isRateLimited(cause) ? "busy" : "error");
+    }
+  }
+
+  function handleClearCoupon() {
+    setCoupon(null);
+    setCouponCode("");
+    setCouponState("idle");
+  }
 
   function handleContactChange(event: React.ChangeEvent<HTMLInputElement>) {
     setContact((previous) => ({ ...previous, [event.target.name]: event.target.value }));
@@ -73,6 +132,27 @@ export default function CheckoutPage() {
       const resolvedPaymentMethod: CheckoutPaymentMethod =
         fulfillmentMethod === "delivery" ? "online" : paymentMethod;
 
+      // The preview above was priced against the cart as it stood then. A
+      // shopper can go back, change quantities and return to a cart with the
+      // same id, so the coupon is re-priced against the cart being confirmed —
+      // otherwise the confirmation screen would show a discount that the
+      // server-side recalculation at checkout does not agree with.
+      // The code in the field is the source of truth, not the preview beside
+      // it: a shopper may have typed one without pressing 適用する, or come back
+      // to a cart whose contents changed under a preview taken earlier.
+      const code = couponCode.trim();
+      let appliedCoupon: CouponPreview | null = null;
+      if (code) {
+        appliedCoupon = await previewCoupon(cartId, code);
+        setCoupon(appliedCoupon);
+        if (!appliedCoupon) {
+          setCouponState("rejected");
+          setError("クーポンがこのご注文に適用できなくなりました。内容をご確認のうえ、もう一度お進みください。");
+          return;
+        }
+        setCouponState("applied");
+      }
+
       saveCheckoutDraft({
         cartId,
         contact,
@@ -80,6 +160,7 @@ export default function CheckoutPage() {
         fulfillmentMethod,
         paymentMethod: resolvedPaymentMethod,
         deliveryAddress: fulfillmentMethod === "delivery" ? deliveryAddress : undefined,
+        coupon: appliedCoupon ?? undefined,
         savedAt: new Date().toISOString(),
       });
       router.push("/shop/checkout/confirm");
@@ -162,6 +243,39 @@ export default function CheckoutPage() {
             </div>
           </section>
         )}
+
+        <section className="border border-s2/40 bg-white p-5">
+          <h2 className="font-serif-ja text-base text-p2 mb-1">クーポン</h2>
+          <p className="text-xs text-n1 mb-4">バーナードスクエア会員特典のクーポンコードをお持ちの方はご入力ください。1回のご注文につき1枚までご利用いただけます。</p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              id="coupon-code"
+              name="couponCode"
+              value={couponCode}
+              onChange={(event) => { setCouponCode(event.target.value); if (couponState !== "idle") { setCoupon(null); setCouponState("idle"); } }}
+              placeholder="クーポンコード"
+              autoComplete="off"
+              aria-label="クーポンコード"
+              className={`${inputClass} uppercase sm:flex-1`}
+            />
+            <button type="button" onClick={handleApplyCoupon} disabled={!couponCode.trim() || couponState === "checking"} className="px-6 py-2.5 border border-p2 text-p2 text-sm hover:bg-p2 hover:text-p1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {couponState === "checking" ? "確認中..." : "適用する"}
+            </button>
+          </div>
+          {couponState === "applied" && coupon && (
+            <dl className="mt-4 pt-4 border-t border-s2/30 text-sm space-y-2">
+              <div className="flex justify-between"><dt className="text-n1">小計</dt><dd className="text-p2">¥{coupon.subtotal.toLocaleString("ja-JP")}</dd></div>
+              <div className="flex justify-between"><dt className="text-n1">クーポン割引</dt><dd className="text-s1">-¥{coupon.discount.toLocaleString("ja-JP")}</dd></div>
+              <div className="flex justify-between font-medium"><dt className="text-p2">割引後の商品合計</dt><dd className="text-p2">¥{coupon.total.toLocaleString("ja-JP")}</dd></div>
+              <div className="pt-1"><button type="button" onClick={handleClearCoupon} className="text-xs text-n1 underline hover:text-p2">クーポンを外す</button></div>
+            </dl>
+          )}
+          {couponState === "rejected" && <p role="alert" className="mt-3 text-sm text-s1">このクーポンコードはこのご注文にはご利用いただけません。コードと有効期限をご確認ください。</p>}
+          {couponState === "stale" && <p role="alert" className="mt-3 text-sm text-s1">カートの内容が変わったため、割引額を計算し直す必要があります。「適用する」を押してご確認ください。</p>}
+          {couponState === "busy" && <p role="alert" className="mt-3 text-sm text-s1">クーポンの確認が混み合っています。少し時間をおいてからもう一度お試しください。</p>}
+          {couponState === "error" && <p role="alert" className="mt-3 text-sm text-s1">クーポンを確認できませんでした。通信環境をご確認のうえ、もう一度お試しください。</p>}
+          {coupon && <p className="mt-3 text-xs text-n1">割引額は注文確定時にあらためて計算されます。送料は含みません。</p>}
+        </section>
 
         <p className="text-xs text-n1 leading-relaxed">確認画面へ進む前に、<Link href="/guide/cancel" className="underline text-p2">返品・キャンセルポリシー</Link>をご確認ください。</p>
         {error && <p role="alert" className="text-sm text-s1">{error}</p>}

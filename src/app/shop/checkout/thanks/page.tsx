@@ -41,7 +41,12 @@ export default function ThanksPage() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  const total = useMemo(() => receipt?.cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) ?? 0, [receipt]);
+  // Amounts recorded from the order Field built, so the coupon and any shipping
+  // fee show exactly what was charged rather than a client-side re-tally.
+  const subtotal = useMemo(() => receipt?.subtotal ?? receipt?.cart.subtotal ?? 0, [receipt]);
+  const discount = receipt?.discount ?? 0;
+  const shippingFee = receipt?.shippingFee ?? 0;
+  const total = useMemo(() => receipt?.total ?? subtotal, [receipt, subtotal]);
 
   async function copyOrderId() {
     if (!orderId || !navigator.clipboard) return;
@@ -80,11 +85,16 @@ export default function ThanksPage() {
               {receipt.cart.items.map((item) => (
                 <div key={item.itemId} className="py-4 flex justify-between gap-4 text-sm">
                   <div><p className="text-p2">{item.product.name}</p><p className="text-xs text-n1">数量 {item.quantity}</p></div>
-                  <p className="text-p2">¥{(item.product.price * item.quantity).toLocaleString("ja-JP")}</p>
+                  <p className="text-p2">¥{item.subtotal.toLocaleString("ja-JP")}</p>
                 </div>
               ))}
             </div>
-            <div className="px-5 py-4 border-t border-s2/40 flex justify-between text-sm font-medium text-p2"><span>{fulfillmentMethod === "delivery" ? "商品合計" : "合計"}</span><span>¥{total.toLocaleString("ja-JP")}</span></div>
+            <dl className="px-5 py-4 border-t border-s2/40 text-sm space-y-2">
+              <div className="flex justify-between"><dt className="text-n1">商品小計</dt><dd className="text-p2">¥{subtotal.toLocaleString("ja-JP")}</dd></div>
+              {discount > 0 && <div className="flex justify-between"><dt className="text-n1">クーポン割引{receipt.couponCode ? `（${receipt.couponCode}）` : ""}</dt><dd className="text-s1">-¥{discount.toLocaleString("ja-JP")}</dd></div>}
+              {shippingFee > 0 && <div className="flex justify-between"><dt className="text-n1">送料</dt><dd className="text-p2">¥{shippingFee.toLocaleString("ja-JP")}</dd></div>}
+              <div className="flex justify-between font-medium pt-2 border-t border-s2/30"><dt className="text-p2">合計</dt><dd className="text-p2">¥{total.toLocaleString("ja-JP")}</dd></div>
+            </dl>
             {fulfillmentMethod === "delivery" && <p className="px-5 pb-4 text-xs text-n1">送料・決済金額の確定内容は決済画面および注文照会でご確認ください。</p>}
           </section>
 

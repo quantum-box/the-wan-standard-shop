@@ -49,10 +49,10 @@ export default function CartPage() {
     }
   }
 
-  const total = cart?.items.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
-  ) ?? 0;
+  // Field prices every line from its own catalog, so the cart's arithmetic is
+  // the server's rather than something recomputed here.
+  const total = cart?.subtotal ?? 0;
+  const unavailable = cart?.items.filter((item) => !item.product.orderable) ?? [];
 
   if (loading) return <p className="text-n1 text-sm">読み込み中...</p>;
 
@@ -90,8 +90,13 @@ export default function CartPage() {
                 <div className="flex-grow">
                   <p className="font-serif-ja text-p2 mb-1">{item.product.name}</p>
                   <p className="text-sm text-n1 mb-2">
-                    ¥{item.product.price.toLocaleString("ja-JP")}
+                    ¥{item.unitPrice.toLocaleString("ja-JP")}
                   </p>
+                  {!item.product.orderable && (
+                    <p className="text-xs text-s1 mb-2">
+                      現在お取り扱いできません。削除してからレジにお進みください。
+                    </p>
+                  )}
                   <div className="flex items-center gap-2">
                     <select
                       value={item.quantity}
@@ -115,7 +120,7 @@ export default function CartPage() {
                   </div>
                 </div>
                 <p className="text-sm text-p2 font-medium whitespace-nowrap">
-                  ¥{(item.product.price * item.quantity).toLocaleString("ja-JP")}
+                  ¥{item.subtotal.toLocaleString("ja-JP")}
                 </p>
               </div>
             ))}
@@ -126,9 +131,15 @@ export default function CartPage() {
               ¥{total.toLocaleString("ja-JP")}
             </p>
           </div>
+          {unavailable.length > 0 && (
+            <p role="alert" className="text-sm text-s1">
+              在庫切れの商品がカートに残っています。削除するとレジに進めます。
+            </p>
+          )}
           <button
             onClick={() => router.push("/shop/checkout")}
-            className="w-full py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 transition-colors"
+            disabled={unavailable.length > 0}
+            className="w-full py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             レジに進む
           </button>

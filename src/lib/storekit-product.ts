@@ -1,7 +1,4 @@
-import type {
-  StockInfo,
-  StorefrontProduct,
-} from "@tachyon-sdk/storekit";
+import type { PublicProduct } from "./storekit-client";
 
 const STORAGE_CDN_BASE = "https://cdn.txcloud.app";
 
@@ -11,7 +8,12 @@ export interface Product {
   description: string;
   price: number;
   imageUrl: string | null;
-  stock: number;
+  /**
+   * The public storefront publishes availability as one bit. Quantity on hand,
+   * reservation counts and low-stock thresholds stay the store's business, so
+   * the UI can say "sold out" but never "3 left".
+   */
+  orderable: boolean;
   category: string | null;
 }
 
@@ -24,17 +26,14 @@ function imageIdToUrl(imageId: string | undefined): string | null {
   return `${STORAGE_CDN_BASE}/cdn-cgi/image/w=800,q=80,f=auto/${key}`;
 }
 
-export function toProduct(
-  product: StorefrontProduct,
-  stock?: StockInfo
-): Product {
+export function toProduct(product: PublicProduct): Product {
   return {
     id: product.id,
     name: product.name,
     description: product.description ?? "",
-    price: product.listPrice,
-    imageUrl: imageIdToUrl(product.imageIds[0]),
-    stock: stock?.trackInventory ? stock.quantityAvailable : 99,
-    category: product.categoryId,
+    price: product.list_price,
+    imageUrl: imageIdToUrl(product.image_ids[0]),
+    orderable: product.orderable,
+    category: product.category_id ?? null,
   };
 }

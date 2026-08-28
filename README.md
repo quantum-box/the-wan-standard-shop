@@ -5,13 +5,14 @@ THE WAN STANDARD のブランドサイト兼オンラインショップです。
 - ブランドサイト: [https://thewanstandard.jp](https://thewanstandard.jp)
 - オンラインショップ: [https://thewanstandard.jp/shop](https://thewanstandard.jp/shop)
 
-Next.js App Router で実装し、静的サイトとして出力します。ショップ機能は独立した TWS テナントとして **TACHYON Field GraphQL API** へ接続します。
+Next.js App Router で実装し、静的サイトとして出力します。ショップ機能は独立した TWS テナントとして **TACHYON Field の公開ストアフロント API**（`/v1/public/storefront/{tenant_id}/…`）へ接続します。ブラウザは Field の資格情報を一切持ちません。
 
 ## 主な機能
 
 - ブランドトップ・ブランド紹介
-- 商品一覧・商品詳細・在庫表示
+- 商品一覧・商品詳細・売り切れ表示
 - カートへの追加、数量変更、削除、ローカル保存
+- チェックアウトでの会員クーポン提示（適用前に割引額を表示）
 - バーナードスクエアでの店舗受け取り注文
 - 店頭支払いによるチェックアウト
 - 注文完了ページ
@@ -46,7 +47,7 @@ Next.js App Router で実装し、静的サイトとして出力します。シ�
 - Tailwind CSS 4
 - ESLint 9
 - Playwright
-- TACHYON Field GraphQL API
+- TACHYON Field 公開ストアフロント API
 - Tachyon Cloud App
 
 `next.config.ts` では `output: "export"`、`trailingSlash: true`、画像の最適化無効を設定しています。ビルド成果物は `out/` に生成されます。
@@ -86,35 +87,51 @@ npm run dev
 |---|---|
 | `npm run dev` | Next.js と Pages Functions を同一 origin の開発サーバーで起動 |
 | `npm run lint` | ESLint を実行 |
-| `npm test` | API オリジン、EC の耐障害性、SDK 移行、ビルド成果物スキャンのテストを実行 |
+| `npm test` | API オリジン、EC の耐障害性、公開ストアフロント経路、ビルド成果物スキャンのテストを実行 |
 | `npm run build` | テスト、静的ビルド、Pages Function の bundle、成果物スキャンを順番に実行 |
 | `npm run scan:retired-origins` | `out/` に廃止済みオリジンが含まれていないか検査 |
+| `npm run scan:browser-surface` | `out/` が公開ストアフロント以外の Field 経路を参照していないか検査 |
 | `npm run scan:pages-worker` | Pages Worker に Node.js 専用 import がなく、集約 API が含まれることを検査 |
 
 `npm run build` では次の処理が自動的に実行されます。
 
 1. `prebuild`: `npm test`
 2. `build`: `next build` と `npm run build:functions`
-3. `postbuild`: 廃止済みオリジンと Pages Worker をスキャン
+3. `postbuild`: 廃止済みオリジン、ブラウザから到達可能な Field 経路、Pages Worker をスキャン
 
 廃止済み API オリジンは `config/retired-origins.txt` で管理します。
 
+`scan:browser-surface` は `/v1/graphql`・`/v1/storekit/`・`x-operator-id`・`x-platform-id` が成果物に含まれると失敗します。これらは quarantine 済みか Bearer 必須で、未認証の呼び出し側がテナントをヘッダーで選ぶことも Field 側が拒否します。
+
 ## API・ストア機能
 
-`src/lib/storekit.ts` が **TACHYON Field GraphQL API** の storefront 向け抽象レイヤーです。`@tachyon-sdk/storekit` を利用し、次の処理を提供しています。
+`src/lib/storekit.ts` が **TACHYON Field 公開ストアフロント API** の抽象レイヤーで、
+実際の HTTP は `src/lib/storekit-client.ts` の薄いクライアントが担当します。
 
-- 商品一覧・商品詳細の取得
-- 在庫数の取得
+- 商品一覧・商品詳細の取得（注文可否 `orderable` を含む）
+- カテゴリの取得
 - カートの作成・取得・更新
-- 店舗受け取り注文の作成
-- ゲスト注文照会
+- クーポンの提示（カート単位で小計・割引額・合計を確認）
+- 店舗受け取り／配送、店頭払い／オンライン決済の注文作成
+- 電話番号と注文番号下4桁によるゲスト注文照会と、短命トークンでの再読み取り
 - 商品画像 ID から CDN URL への変換
 
-注文照会だけは SDK の `ConsumerOrder` に `paymentStatus` が追加されるまで、自前 GraphQL 経路を残しています（`PLT-3986`）。現在の API エンドポイントは以下です。
+接続先は次のベース URL です。テナントはヘッダーではなくパスで指定します。
 
 ```text
-https://tachyon-field-api.txcloud.app/v1/graphql
+https://tachyon-field-api.txcloud.app/v1/public/storefront/{tenant_id}
 ```
+
+公開面の制約はそのまま UI の制約になります。
+
+| 機能 | 公開されるもの | 公開されないもの |
+|---|---|---|
+| 在庫 | `orderable` の1ビット | 在庫数・予約数・低在庫閾値 |
+| クーポン | そのカートの小計・割引額・合計 | クーポン ID・割引種別・有効期限。存在しない／期限切れ／最低額未満はすべて同じ 404 |
+| 注文照会 | 注文番号・状態・明細・金額 | 氏名・連絡先・配送先。注文 ID 単体では引けない |
+
+クーポン提示と注文照会にはテナント単位で 20 リクエスト/分の予算が割り当てられています。
+どちらも明示的な操作（ボタン押下・フォーム送信）でのみ発火させ、入力のたびには呼び出しません。
 
 ### 商品追加時の注意
 
@@ -122,9 +139,9 @@ https://tachyon-field-api.txcloud.app/v1/graphql
 
 ### 商品一覧の集約 API
 
-商品一覧は `/api/storefront/products` の Pages Function で商品ごとの在庫を集約し、
-在庫の鮮度と Field API の負荷を釣り合わせるため 60 秒キャッシュしてからブラウザへ返します。
-ブラウザからは集約 API を1回だけ呼び、商品単位の在庫リクエストは送信しません。
+商品一覧は `/api/storefront/products` の Pages Function が公開ストアフロントから取得し、
+在庫の鮮度とテナントの read 予算を釣り合わせるため 60 秒キャッシュしてからブラウザへ返します。
+公開ルートの一覧が `orderable` を各行に載せるため、商品ごとの在庫取得は不要になりました。
 `npm run build` は Pages Function を `out/_worker.js/index.js` に bundle し、静的成果物と
 同じ Cloudflare Pages deployment に含めます。
 
@@ -165,6 +182,7 @@ GitHub Actions からの Cloudflare Pages 自動デプロイや、`CLOUDFLARE_AP
 - `main` へ直接 push せず、Pull Request 経由で変更します。
 - マージ前に `npm run lint` と `npm run build` を実行します。
 - API オリジンを変更する場合は、廃止済みオリジンの登録と成果物スキャンも更新します。
+- Field への新しい呼び出しを足す場合は、公開ストアフロントのルートだけを使います。
 
 詳細な実装・運用ルールは `AGENTS.md` を参照してください。
 
