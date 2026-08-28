@@ -164,9 +164,12 @@ export default function CheckoutConfirmPage() {
 
   const fulfillmentMethod = draft.fulfillmentMethod ?? "pickup";
   const paymentMethod = fulfillmentMethod === "delivery" ? "online" : (draft.paymentMethod ?? "in_store");
-  const subtotal = draft.cart.subtotal;
+  // With a coupon the three figures come from one preview, so they add up.
+  // Re-deriving the total from separately rounded yen could disagree with what
+  // Field charges by a yen.
+  const subtotal = draft.coupon?.subtotal ?? draft.cart.subtotal;
   const discount = draft.coupon?.discount ?? 0;
-  const total = subtotal - discount;
+  const total = draft.coupon?.total ?? subtotal;
 
   return (
     <div className="max-w-2xl">

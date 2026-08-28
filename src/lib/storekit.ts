@@ -173,14 +173,28 @@ export async function getCart(cartId: string): Promise<Cart> {
   return enrichCart(await storefront.getCart(cartId));
 }
 
+/**
+ * Public carts expire, and the identifier the browser kept outlives them. A
+ * stale one would otherwise make "add to cart" fail for good, so a 404 is
+ * treated as "no cart yet" and a fresh one is opened.
+ */
 export async function addToCart(
   cartId: string | null,
   productId: string,
   quantity: number
 ): Promise<Cart> {
-  const actualCartId = cartId ?? (await storefront.createCart()).id;
+  if (cartId) {
+    try {
+      return enrichCart(
+        await storefront.addCartItem(cartId, { productId, quantity })
+      );
+    } catch (error) {
+      if (!isNotFound(error)) throw error;
+    }
+  }
+  const opened = await storefront.createCart();
   return enrichCart(
-    await storefront.addCartItem(actualCartId, { productId, quantity })
+    await storefront.addCartItem(opened.id, { productId, quantity })
   );
 }
 

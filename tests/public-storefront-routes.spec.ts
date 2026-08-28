@@ -301,6 +301,49 @@ test("cart operations use the public cart routes and the server's arithmetic", a
   }
 });
 
+test("an expired cart identifier opens a fresh cart instead of failing for good", async () => {
+  const { calls, restore } = stubFetch({
+    // The browser kept `crt_stale` past the cart's expiry.
+    "POST /carts/crt_stale/items": () =>
+      fieldError(404, "NOT_FOUND", "Cart not found"),
+    "POST /carts": () => json({ ...cart, id: "crt_01" }, 201),
+    "POST /carts/crt_01/items": () => json(cart),
+    "GET /products/pd_01": () => json(product),
+  });
+
+  try {
+    await expect(addToCart("crt_stale", product.id, 2)).resolves.toMatchObject({
+      id: "crt_01",
+    });
+    expect(calls.map((call) => `${call.method} ${call.url.slice(BASE.length)}`)).toEqual([
+      "POST /carts/crt_stale/items",
+      "POST /carts",
+      "POST /carts/crt_01/items",
+      "GET /products/pd_01",
+    ]);
+  } finally {
+    restore();
+  }
+});
+
+test("a cart error that is not a missing cart is not papered over", async () => {
+  const { calls, restore } = stubFetch({
+    "POST /carts/crt_01/items": () =>
+      fieldError(400, "BAD_REQUEST", "Unavailable product or rejected quantity"),
+  });
+
+  try {
+    await addToCart("crt_01", product.id, 2).then(
+      () => { throw new Error("expected the rejected quantity to surface"); },
+      (error: unknown) => { expect((error as Error).message).toContain("rejected quantity"); }
+    );
+    // No second cart was opened: a 400 says the request was wrong, not the cart.
+    expect(calls).toHaveLength(1);
+  } finally {
+    restore();
+  }
+});
+
 test("a coupon is priced against the cart the caller holds", async () => {
   const { calls, restore } = stubFetch({
     "POST /carts/crt_01/coupon-preview": () =>
