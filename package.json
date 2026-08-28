@@ -11,7 +11,7 @@
     "postbuild": "npm run scan:retired-origins && npm run scan:browser-surface && npm run scan:pages-worker",
     "start": "next start",
     "lint": "eslint",
-    "test": "playwright test tests/storefront-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts tests/commerce-resilience.spec.ts tests/public-storefront-routes.spec.ts tests/browser-surface-scan.spec.ts",
+    "test": "playwright test tests/storefront-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts tests/commerce-resilience.spec.ts tests/public-storefront-routes.spec.ts tests/browser-surface-scan.spec.ts tests/persisted-shape-guards.spec.ts",
     "scan:retired-origins": "node scripts/check-retired-origins.mjs out",
     "scan:browser-surface": "node scripts/check-browser-surface.mjs out",
     "scan:pages-worker": "node scripts/check-pages-worker.mjs out/_worker.js/index.js"

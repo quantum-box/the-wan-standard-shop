@@ -14,7 +14,14 @@ import {
   type FulfillmentMethod,
 } from "@/lib/checkout-storage";
 
-type CouponState = "idle" | "checking" | "applied" | "rejected" | "busy" | "error";
+type CouponState =
+  | "idle"
+  | "checking"
+  | "applied"
+  | "rejected"
+  | "stale"
+  | "busy"
+  | "error";
 
 const EMPTY_ADDRESS: DeliveryAddress = {
   postalCode: "",
@@ -37,6 +44,7 @@ export default function CheckoutPage() {
   const [couponState, setCouponState] = useState<CouponState>("idle");
 
   useEffect(() => {
+    let canceled = false;
     const timeoutId = window.setTimeout(() => {
       const draft = getCheckoutDraft();
       const cartId = getCartId();
@@ -45,13 +53,30 @@ export default function CheckoutPage() {
       setFulfillmentMethod(draft.fulfillmentMethod ?? "pickup");
       setPaymentMethod(draft.paymentMethod ?? "in_store");
       if (draft.deliveryAddress) setDeliveryAddress(draft.deliveryAddress);
-      if (draft.coupon) {
-        setCoupon(draft.coupon);
-        setCouponCode(draft.coupon.code);
-        setCouponState("applied");
-      }
+
+      const restored = draft.coupon;
+      if (!restored) return;
+      setCoupon(restored);
+      setCouponCode(restored.code);
+      setCouponState("applied");
+      // The cart identifier survives a trip back to the cart page, so a
+      // restored preview can describe a cart that no longer exists. Checking
+      // the subtotal costs a cart read rather than one of the 20/min coupon
+      // attempts, so it is safe to do on load.
+      void getCart(cartId)
+        .then((cart) => {
+          if (canceled || cart.subtotal === restored.subtotal) return;
+          setCoupon(null);
+          setCouponState("stale");
+        })
+        .catch(() => {
+          // Leave the restored preview alone; submit re-prices it anyway.
+        });
     }, 0);
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      canceled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, []);
 
   // Applied on an explicit press, never as the shopper types: attempts run on
@@ -107,6 +132,27 @@ export default function CheckoutPage() {
       const resolvedPaymentMethod: CheckoutPaymentMethod =
         fulfillmentMethod === "delivery" ? "online" : paymentMethod;
 
+      // The preview above was priced against the cart as it stood then. A
+      // shopper can go back, change quantities and return to a cart with the
+      // same id, so the coupon is re-priced against the cart being confirmed —
+      // otherwise the confirmation screen would show a discount that the
+      // server-side recalculation at checkout does not agree with.
+      // The code in the field is the source of truth, not the preview beside
+      // it: a shopper may have typed one without pressing 適用する, or come back
+      // to a cart whose contents changed under a preview taken earlier.
+      const code = couponCode.trim();
+      let appliedCoupon: CouponPreview | null = null;
+      if (code) {
+        appliedCoupon = await previewCoupon(cartId, code);
+        setCoupon(appliedCoupon);
+        if (!appliedCoupon) {
+          setCouponState("rejected");
+          setError("クーポンがこのご注文に適用できなくなりました。内容をご確認のうえ、もう一度お進みください。");
+          return;
+        }
+        setCouponState("applied");
+      }
+
       saveCheckoutDraft({
         cartId,
         contact,
@@ -114,7 +160,7 @@ export default function CheckoutPage() {
         fulfillmentMethod,
         paymentMethod: resolvedPaymentMethod,
         deliveryAddress: fulfillmentMethod === "delivery" ? deliveryAddress : undefined,
-        coupon: coupon ?? undefined,
+        coupon: appliedCoupon ?? undefined,
         savedAt: new Date().toISOString(),
       });
       router.push("/shop/checkout/confirm");
@@ -225,6 +271,7 @@ export default function CheckoutPage() {
             </dl>
           )}
           {couponState === "rejected" && <p role="alert" className="mt-3 text-sm text-s1">このクーポンコードはこのご注文にはご利用いただけません。コードと有効期限をご確認ください。</p>}
+          {couponState === "stale" && <p role="alert" className="mt-3 text-sm text-s1">カートの内容が変わったため、割引額を計算し直す必要があります。「適用する」を押してご確認ください。</p>}
           {couponState === "busy" && <p role="alert" className="mt-3 text-sm text-s1">クーポンの確認が混み合っています。少し時間をおいてからもう一度お試しください。</p>}
           {couponState === "error" && <p role="alert" className="mt-3 text-sm text-s1">クーポンを確認できませんでした。通信環境をご確認のうえ、もう一度お試しください。</p>}
           {coupon && <p className="mt-3 text-xs text-n1">割引額は注文確定時にあらためて計算されます。送料は含みません。</p>}

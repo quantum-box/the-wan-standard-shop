@@ -4,23 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { getDeliveryOrderView, saveDeliveryOrderView } from "@/lib/delivery-order-storage";
 import { refreshOrder, type OrderLookup } from "@/lib/storekit";
-
-const PRE_SHIPMENT = new Set(["pending", "confirmed", "processing", "preparing"]);
-const SHIPPED = new Set(["shipped", "in_transit", "delivered"]);
-
-function statusLabel(status: string) {
-  const labels: Record<string, string> = {
-    pending: "注文受付",
-    confirmed: "注文確定",
-    processing: "出荷準備中",
-    preparing: "出荷準備中",
-    shipped: "発送済み",
-    in_transit: "配送中",
-    delivered: "配達完了",
-    cancelled: "キャンセル済み",
-  };
-  return labels[status.toLowerCase()] ?? status;
-}
+import {
+  orderStatusLabel,
+  PRE_SHIPMENT_STATUSES,
+  SHIPPED_STATUSES,
+} from "@/lib/order-status";
 
 type RefreshState = "idle" | "loading" | "expired" | "error";
 
@@ -56,9 +44,9 @@ export default function DeliveryOrderPage() {
   }
 
   const status = order.status.toLowerCase();
-  const canRequestAddressChange = PRE_SHIPMENT.has(status);
-  const shipped = SHIPPED.has(status);
-  const progress = shipped ? (status === "delivered" ? 4 : 3) : canRequestAddressChange ? (status === "pending" ? 1 : 2) : 1;
+  const canRequestAddressChange = PRE_SHIPMENT_STATUSES.has(status);
+  const shipped = SHIPPED_STATUSES.has(status);
+  const progress = shipped ? (status === "delivered" ? 4 : 3) : canRequestAddressChange ? (status === "pending" || status === "placed" ? 1 : 2) : 1;
   const subject = encodeURIComponent(`配送先変更の相談 ${order.id}`);
   const body = encodeURIComponent(`注文番号: ${order.id}\n変更希望の配送先:\n`);
 
@@ -67,7 +55,7 @@ export default function DeliveryOrderPage() {
       <div className="mb-8"><p className="text-xs text-n1 mb-1">注文番号</p><h1 className="font-serif-en text-xl tracking-wider text-p2 break-all">{order.id}</h1></div>
       <section className="border border-s2/40 bg-white p-5 mb-4">
         <p className="text-xs text-n1">配送状況</p>
-        <p className="font-serif-ja text-xl text-p2 mt-1">{statusLabel(order.status)}</p>
+        <p className="font-serif-ja text-xl text-p2 mt-1">{orderStatusLabel(order.status)}</p>
         <div className="grid grid-cols-4 gap-1 mt-5" aria-label="配送進捗">
           {["注文受付", "出荷準備", "発送", "配達完了"].map((label, index) => <div key={label}><div className={`h-1 ${index < progress ? "bg-p2" : "bg-s2/40"}`} /><p className="text-[10px] text-n1 mt-1">{label}</p></div>)}
         </div>

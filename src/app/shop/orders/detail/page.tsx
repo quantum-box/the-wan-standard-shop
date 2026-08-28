@@ -4,11 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getOrderView, saveOrderView } from "@/lib/order-view-storage";
 import { refreshOrder, type OrderLookup } from "@/lib/storekit";
+import { orderStatusLabel, paymentStatusLabel } from "@/lib/order-status";
 
 function formatDate(value: string) { const d=new Date(value); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).format(d); }
 function formatMoney(yen: number) { return `¥${yen.toLocaleString("ja-JP")}`; }
-function statusLabel(status: string) { const labels:Record<string,string>={pending:"受付中",confirmed:"準備中",ready:"受取可能",completed:"受取済み",cancelled:"キャンセル済み"}; return labels[status.toLowerCase()]??status; }
-function paymentLabel(status: string) { const labels:Record<string,string>={pending:"店頭支払い前",unpaid:"店頭支払い前",paid:"支払い済み"}; return labels[status.toLowerCase()]??status; }
 
 type RefreshState = "idle" | "loading" | "expired" | "error";
 
@@ -46,7 +45,7 @@ export default function OrderDetailPage() {
 
   return <div className="max-w-2xl">
     <div className="flex flex-col sm:flex-row sm:justify-between gap-3 mb-8"><div><p className="text-xs text-n1 mb-1">注文番号</p><h1 className="font-serif-en text-xl tracking-wider text-p2 break-all">{order.id}</h1></div><div className="sm:text-right"><p className="text-xs text-n1">注文日時</p><p className="text-sm text-p2">{formatDate(order.createdAt)}</p></div></div>
-    <section className="grid sm:grid-cols-2 gap-4 mb-4"><div className="border border-s2/40 bg-white p-5"><p className="text-xs text-n1">注文状態</p><p className="text-lg text-p2 mt-1">{statusLabel(order.status)}</p></div><div className="border border-s2/40 bg-white p-5"><p className="text-xs text-n1">支払状態</p><p className="text-lg text-p2 mt-1">{paymentLabel(order.paymentStatus)}</p></div></section>
+    <section className="grid sm:grid-cols-2 gap-4 mb-4"><div className="border border-s2/40 bg-white p-5"><p className="text-xs text-n1">注文状態</p><p className="text-lg text-p2 mt-1">{orderStatusLabel(order.status)}</p></div><div className="border border-s2/40 bg-white p-5"><p className="text-xs text-n1">支払状態</p><p className="text-lg text-p2 mt-1">{paymentStatusLabel(order.paymentStatus)}</p></div></section>
     <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2">
       <button type="button" onClick={handleRefresh} disabled={refreshState==="loading"||refreshState==="expired"} className="px-4 py-2 border border-p2 text-p2 text-xs hover:bg-p2 hover:text-p1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{refreshState==="loading"?"更新中...":"最新の状態に更新"}</button>
       {refreshState==="expired" && <span className="text-xs text-s1">確認の有効期限が切れました。<Link href="/shop/orders/lookup" className="underline">もう一度照会</Link>してください。</span>}

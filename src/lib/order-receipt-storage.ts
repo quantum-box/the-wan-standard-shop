@@ -3,6 +3,18 @@ import type { CheckoutPaymentMethod, FulfillmentMethod } from "@/lib/checkout-st
 
 const PREFIX = "tws_order_receipt:";
 
+/** Receipts written by an earlier build carry the pre-migration cart shape. */
+function isCurrentReceipt(value: unknown): value is OrderReceipt {
+  if (typeof value !== "object" || value === null) return false;
+  const receipt = value as Partial<OrderReceipt>;
+  if (typeof receipt.orderId !== "string") return false;
+  const cart = receipt.cart;
+  if (typeof cart !== "object" || cart === null) return false;
+  if (typeof cart.subtotal !== "number" || !Array.isArray(cart.items)) return false;
+  return cart.items.every((item) => typeof item?.subtotal === "number");
+}
+
+
 export interface OrderReceipt {
   orderId: string;
   cart: Cart;
@@ -32,9 +44,11 @@ export function getOrderReceipt(orderId: string): OrderReceipt | null {
   const raw = sessionStorage.getItem(`${PREFIX}${orderId}`);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as OrderReceipt;
+    const parsed: unknown = JSON.parse(raw);
+    if (isCurrentReceipt(parsed)) return parsed;
   } catch {
-    sessionStorage.removeItem(`${PREFIX}${orderId}`);
-    return null;
+    // fall through to the cleanup below
   }
+  sessionStorage.removeItem(`${PREFIX}${orderId}`);
+  return null;
 }
