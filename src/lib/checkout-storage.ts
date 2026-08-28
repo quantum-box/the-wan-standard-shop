@@ -1,4 +1,4 @@
-import type { Cart } from "@/lib/storekit";
+import type { Cart, CouponPreview } from "@/lib/storekit";
 
 const CHECKOUT_DRAFT_KEY = "tws_checkout_draft";
 
@@ -26,6 +26,11 @@ export interface CheckoutDraft {
   fulfillmentMethod?: FulfillmentMethod;
   paymentMethod?: CheckoutPaymentMethod;
   deliveryAddress?: DeliveryAddress;
+  /**
+   * The preview Field returned for this cart. Indicative only — checkout
+   * re-prices the code server-side and that result is the one that binds.
+   */
+  coupon?: CouponPreview;
   savedAt: string;
 }
 

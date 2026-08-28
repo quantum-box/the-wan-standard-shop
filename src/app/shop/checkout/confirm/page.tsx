@@ -3,9 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createOrder, getCart, type Cart } from "@/lib/storekit";
-import { createDeliveryOrder } from "@/lib/delivery-checkout";
-import { createOnlinePickupOrder } from "@/lib/online-checkout";
+import { getCart, placeOrder, type Cart } from "@/lib/storekit";
 import { clearCartId } from "@/lib/cart-storage";
 import { clearCheckoutDraft, getCheckoutDraft, type CheckoutDraft, type DeliveryAddress } from "@/lib/checkout-storage";
 import { saveOrderReceipt } from "@/lib/order-receipt-storage";
@@ -21,7 +19,7 @@ function cartChanged(previous: Cart, latest: Cart): boolean {
   const latestById = new Map(latest.items.map((item) => [item.itemId, item]));
   return previous.items.some((item) => {
     const current = latestById.get(item.itemId);
-    return !current || current.productId !== item.productId || current.quantity !== item.quantity || current.product.price !== item.product.price;
+    return !current || current.productId !== item.productId || current.quantity !== item.quantity || current.unitPrice !== item.unitPrice;
   });
 }
 
@@ -51,7 +49,9 @@ export default function CheckoutConfirmPage() {
   async function validateCart(checkoutDraft: CheckoutDraft): Promise<void> {
     const latest = await getCart(checkoutDraft.cartId);
     if (latest.items.length === 0) throw new Error("EMPTY_CART");
-    const unavailable = latest.items.find((item) => item.product.stock < item.quantity);
+    // The public catalog publishes availability as one bit, so this is the whole
+    // stock check the storefront can make — and the one the shopper needs.
+    const unavailable = latest.items.find((item) => !item.product.orderable);
     if (unavailable) throw new Error(`OUT_OF_STOCK:${unavailable.product.name}`);
     if (cartChanged(checkoutDraft.cart, latest)) throw new Error("CART_CHANGED");
   }
@@ -73,91 +73,83 @@ export default function CheckoutConfirmPage() {
 
     try {
       await validateCart(draft);
+      if (onlinePayment && !draft.contact.email) throw new Error("EMAIL_REQUIRED");
+
       const createdAt = new Date();
-      const pickupDeadline = new Date(createdAt);
-      pickupDeadline.setDate(pickupDeadline.getDate() + 7);
-
-      if (fulfillmentMethod === "pickup" && paymentMethod === "in_store") {
-        const result = await createOrder({
-          cartId: draft.cartId,
-          name: draft.contact.name,
-          phone: draft.contact.phone,
-          email: draft.contact.email || undefined,
-        });
-        saveOrderReceipt({
-          orderId: result.id,
-          cart: draft.cart,
-          name: draft.contact.name,
-          phone: draft.contact.phone,
-          email: draft.contact.email || undefined,
-          createdAt: createdAt.toISOString(),
-          fulfillmentMethod,
-          paymentMethod,
-          pickupDeadline: pickupDeadline.toISOString(),
-        });
-        clearCartId();
-        clearCheckoutDraft();
-        router.replace(`/shop/checkout/thanks?order=${encodeURIComponent(result.id)}`);
-        return;
-      }
-
-      if (!draft.contact.email) throw new Error("EMAIL_REQUIRED");
-      markPaymentAttempt(draft.cartId);
+      const shippingAddress = fulfillmentMethod === "delivery" ? addressText(draft.deliveryAddress) : undefined;
       const origin = window.location.origin;
-      const cancelUrl = `${origin}/shop/checkout/payment?status=cancelled&cart=${encodeURIComponent(draft.cartId)}`;
-      const successUrl = `${origin}/shop/checkout/thanks`;
 
-      const result = fulfillmentMethod === "delivery"
-        ? await createDeliveryOrder({
-            cartId: draft.cartId,
-            name: draft.contact.name,
-            phone: draft.contact.phone,
-            email: draft.contact.email,
-            postalCode: draft.deliveryAddress?.postalCode ?? "",
-            prefecture: draft.deliveryAddress?.prefecture ?? "",
-            city: draft.deliveryAddress?.city ?? "",
-            addressLine1: draft.deliveryAddress?.addressLine1 ?? "",
-            addressLine2: draft.deliveryAddress?.addressLine2 || undefined,
-            successUrl,
-            cancelUrl,
-          })
-        : await createOnlinePickupOrder({
-            cartId: draft.cartId,
-            name: draft.contact.name,
-            phone: draft.contact.phone,
-            email: draft.contact.email,
-            successUrl,
-            cancelUrl,
-          });
+      if (onlinePayment) markPaymentAttempt(draft.cartId);
+
+      // One call for every combination: Field re-prices the cart and the coupon
+      // server-side, so the amounts below come back from the order it built.
+      const order = await placeOrder({
+        cartId: draft.cartId,
+        name: draft.contact.name,
+        phone: draft.contact.phone,
+        email: draft.contact.email || undefined,
+        fulfillmentMethod,
+        paymentMethod,
+        shippingAddress,
+        couponCode: draft.coupon?.code,
+        successUrl: onlinePayment ? `${origin}/shop/checkout/thanks` : undefined,
+        cancelUrl: onlinePayment
+          ? `${origin}/shop/checkout/payment?status=cancelled&cart=${encodeURIComponent(draft.cartId)}`
+          : undefined,
+      });
+
+      const pickupDeadline = order.pickupDeadline ?? (() => {
+        const deadline = new Date(createdAt);
+        deadline.setDate(deadline.getDate() + 7);
+        return deadline.toISOString();
+      })();
 
       saveOrderReceipt({
-        orderId: result.id,
+        orderId: order.id,
         cart: draft.cart,
         name: draft.contact.name,
         phone: draft.contact.phone,
-        email: draft.contact.email,
+        email: draft.contact.email || undefined,
         createdAt: createdAt.toISOString(),
         fulfillmentMethod,
         paymentMethod,
-        deliveryAddress: fulfillmentMethod === "delivery" ? addressText(draft.deliveryAddress) : undefined,
-        pickupDeadline: fulfillmentMethod === "pickup" ? pickupDeadline.toISOString() : undefined,
+        deliveryAddress: shippingAddress,
+        pickupDeadline: fulfillmentMethod === "pickup" ? pickupDeadline : undefined,
+        subtotal: order.subtotal,
+        discount: Math.max(order.subtotal + order.shippingFee - order.total, 0),
+        shippingFee: order.shippingFee,
+        total: order.total,
+        couponCode: draft.coupon?.code,
       });
-      savePendingPaymentOrder({ orderId: result.id, cartId: draft.cartId });
-      window.location.href = result.checkoutUrl;
+
+      if (onlinePayment) {
+        if (!order.checkoutUrl) throw new Error("CHECKOUT_URL_MISSING");
+        savePendingPaymentOrder({ orderId: order.id, cartId: draft.cartId });
+        window.location.href = order.checkoutUrl;
+        return;
+      }
+
+      clearCartId();
+      clearCheckoutDraft();
+      router.replace(`/shop/checkout/thanks?order=${encodeURIComponent(order.id)}`);
     } catch (cause) {
       submittedRef.current = false;
-      if ((draft.paymentMethod ?? "in_store") === "online" || (draft.fulfillmentMethod ?? "pickup") === "delivery") {
-        clearPaymentAttempt(draft.cartId);
-      }
+      if (onlinePayment) clearPaymentAttempt(draft.cartId);
       const message = cause instanceof Error ? cause.message : "";
       if (message.startsWith("OUT_OF_STOCK:")) {
-        setError(`${message.slice("OUT_OF_STOCK:".length)}の在庫が不足しています。カートに戻って数量を調整してください。`);
+        setError(`${message.slice("OUT_OF_STOCK:".length)}は現在お取り扱いできません。カートに戻って内容を調整してください。`);
       } else if (message === "EMPTY_CART") {
         setError("カートに商品がありません。商品を選び直してください。");
       } else if (message === "CART_CHANGED") {
         setError("確認中に商品の数量または価格が変更されました。カートに戻って最新の内容をご確認ください。");
       } else if (message === "EMAIL_REQUIRED") {
         setError("オンライン決済にはメールアドレスが必要です。入力内容を修正してください。");
+      } else if (message === "CHECKOUT_URL_MISSING") {
+        setError("決済画面を開けませんでした。時間をおいて注文状況をご確認ください。");
+      } else if (draft.coupon) {
+        // The coupon is re-validated at checkout, so a code that lapsed between
+        // the preview and here fails the order instead of quietly dropping off.
+        setError("注文を確定できませんでした。クーポンが利用できなくなっている可能性があります。入力内容を修正するか、クーポンを外して再度お試しください。");
       } else {
         setError("注文を確定できませんでした。内容を確認して、もう一度お試しください。");
       }
@@ -172,7 +164,9 @@ export default function CheckoutConfirmPage() {
 
   const fulfillmentMethod = draft.fulfillmentMethod ?? "pickup";
   const paymentMethod = fulfillmentMethod === "delivery" ? "online" : (draft.paymentMethod ?? "in_store");
-  const total = draft.cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const subtotal = draft.cart.subtotal;
+  const discount = draft.coupon?.discount ?? 0;
+  const total = subtotal - discount;
 
   return (
     <div className="max-w-2xl">
@@ -182,10 +176,15 @@ export default function CheckoutConfirmPage() {
       <section className="border border-s2/40 bg-white mb-6">
         <h2 className="text-sm font-medium text-p2 px-5 py-4 border-b border-s2/30">ご注文商品</h2>
         <div className="divide-y divide-s2/30 px-5">
-          {draft.cart.items.map((item) => <div key={item.itemId} className="py-4 flex justify-between gap-4 text-sm"><div><p className="text-p2">{item.product.name}</p><p className="text-xs text-n1 mt-1">数量 {item.quantity} × ¥{item.product.price.toLocaleString("ja-JP")}</p></div><p className="text-p2">¥{(item.product.price * item.quantity).toLocaleString("ja-JP")}</p></div>)}
+          {draft.cart.items.map((item) => <div key={item.itemId} className="py-4 flex justify-between gap-4 text-sm"><div><p className="text-p2">{item.product.name}</p><p className="text-xs text-n1 mt-1">数量 {item.quantity} × ¥{item.unitPrice.toLocaleString("ja-JP")}</p></div><p className="text-p2">¥{item.subtotal.toLocaleString("ja-JP")}</p></div>)}
         </div>
-        <div className="px-5 py-4 border-t border-s2/40 flex justify-between text-sm font-medium text-p2"><span>{fulfillmentMethod === "delivery" ? "商品合計" : "合計"}</span><span>¥{total.toLocaleString("ja-JP")}</span></div>
+        <dl className="px-5 py-4 border-t border-s2/40 text-sm space-y-2">
+          <div className="flex justify-between"><dt className="text-n1">商品小計</dt><dd className="text-p2">¥{subtotal.toLocaleString("ja-JP")}</dd></div>
+          {draft.coupon && <div className="flex justify-between"><dt className="text-n1">クーポン割引（{draft.coupon.code}）</dt><dd className="text-s1">-¥{discount.toLocaleString("ja-JP")}</dd></div>}
+          <div className="flex justify-between font-medium pt-2 border-t border-s2/30"><dt className="text-p2">{fulfillmentMethod === "delivery" ? "商品合計" : "合計"}</dt><dd className="text-p2">¥{total.toLocaleString("ja-JP")}</dd></div>
+        </dl>
         {fulfillmentMethod === "delivery" && <p className="px-5 pb-4 text-xs text-n1">送料は決済時に自動計算されます。</p>}
+        {draft.coupon && <p className="px-5 pb-4 text-xs text-n1">割引は注文確定時にあらためて計算されます。</p>}
       </section>
 
       <section className="grid sm:grid-cols-2 gap-4 mb-6">

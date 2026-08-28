@@ -1,16 +1,16 @@
-import type { OrderLookupResult } from "@/lib/storekit";
+import type { OrderLookup } from "@/lib/storekit";
 
 const PREFIX = "tws_order_view:";
 
-export function saveOrderView(order: OrderLookupResult): void {
+export function saveOrderView(lookup: OrderLookup): void {
   if (typeof window === "undefined") return;
-  sessionStorage.setItem(`${PREFIX}${order.id}`, JSON.stringify(order));
+  sessionStorage.setItem(`${PREFIX}${lookup.order.id}`, JSON.stringify(lookup));
 }
 
-export function getOrderView(orderId: string): OrderLookupResult | null {
+export function getOrderView(orderId: string): OrderLookup | null {
   if (typeof window === "undefined") return null;
   const raw = sessionStorage.getItem(`${PREFIX}${orderId}`);
   if (!raw) return null;
-  try { return JSON.parse(raw) as OrderLookupResult; }
+  try { return JSON.parse(raw) as OrderLookup; }
   catch { sessionStorage.removeItem(`${PREFIX}${orderId}`); return null; }
 }

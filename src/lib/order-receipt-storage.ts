@@ -14,6 +14,12 @@ export interface OrderReceipt {
   paymentMethod?: CheckoutPaymentMethod;
   deliveryAddress?: string;
   pickupDeadline?: string;
+  /** Amounts as the order was actually priced, coupon and shipping included. */
+  subtotal?: number;
+  discount?: number;
+  shippingFee?: number;
+  total?: number;
+  couponCode?: string;
 }
 
 export function saveOrderReceipt(receipt: OrderReceipt): void {

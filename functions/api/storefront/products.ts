@@ -1,4 +1,4 @@
-import { getProductsWithStockUncached } from "../../../src/lib/storefront-products-server";
+import { getStorefrontProductsUncached } from "../../../src/lib/storefront-products-server";
 
 const CACHE_TTL_SECONDS = 60;
 
@@ -29,7 +29,7 @@ export async function onRequestGet(
   if (cachedResponse) return cachedResponse;
 
   try {
-    const products = await getProductsWithStockUncached();
+    const products = await getStorefrontProductsUncached();
     const response = jsonResponse(
       { products },
       {
