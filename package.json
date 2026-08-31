@@ -2,15 +2,19 @@
   "name": "the-wan-standard-shop",
   "version": "0.1.1",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
     "prebuild": "npm test",
-    "build": "next build",
-    "postbuild": "npm run scan:retired-origins",
+    "build": "next build && npm run build:functions",
+    "build:functions": "npx --yes wrangler@4.100.0 pages functions build functions --outdir out/_worker.js --project-directory . --build-output-directory out --compatibility-date 2024-12-30 --minify",
+    "postbuild": "npm run scan:retired-origins && npm run scan:browser-surface && npm run scan:pages-worker",
     "start": "next start",
     "lint": "eslint",
-    "test": "NEXT_PUBLIC_API_BASE_URL=https://bakuure.api.n1.tachy.one/ playwright test tests/storekit-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts",
-    "scan:retired-origins": "node scripts/check-retired-origins.mjs out"
+    "test": "playwright test tests/storefront-api-origin.spec.ts tests/retired-origin-artifact-scan.spec.ts tests/commerce-resilience.spec.ts tests/public-storefront-routes.spec.ts tests/browser-surface-scan.spec.ts tests/persisted-shape-guards.spec.ts",
+    "scan:retired-origins": "node scripts/check-retired-origins.mjs out",
+    "scan:browser-surface": "node scripts/check-browser-surface.mjs out",
+    "scan:pages-worker": "node scripts/check-pages-worker.mjs out/_worker.js/index.js"
   },
   "dependencies": {
     "next": "16.2.4",

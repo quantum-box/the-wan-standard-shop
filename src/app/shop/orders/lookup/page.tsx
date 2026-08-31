@@ -2,27 +2,56 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { getOrderByLookup, type OrderLookupResult } from "@/lib/storekit";
-import { cancelConsumerOrder } from "@/lib/order-cancel";
+import { useRouter } from "next/navigation";
+import { isRateLimited, lookupOrder } from "@/lib/storekit";
+import { saveOrderView } from "@/lib/order-view-storage";
+import { saveDeliveryOrderView } from "@/lib/delivery-order-storage";
 
-type LookupState = "idle" | "loading" | "found" | "not_found" | "error";
-const CANCELLABLE = new Set(["pending", "confirmed"]);
-
-function formatDate(value: string): string { const date=new Date(value); if(Number.isNaN(date.getTime()))return value; return new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).format(date); }
-function formatOrderId(id: string): string { return id.length>8?`${id.slice(0,4)}…${id.slice(-4)}`:id; }
+type LookupState = "idle" | "loading" | "not_found" | "busy" | "error";
 
 export default function OrderLookupPage() {
-  const [phone,setPhone]=useState(""); const [lastDigits,setLastDigits]=useState(""); const [state,setState]=useState<LookupState>("idle"); const [order,setOrder]=useState<OrderLookupResult|null>(null);
-  const [confirming,setConfirming]=useState(false); const [cancelling,setCancelling]=useState(false); const [cancelError,setCancelError]=useState<string|null>(null);
-  async function handleSubmit(event:React.FormEvent<HTMLFormElement>){event.preventDefault();setState("loading");setOrder(null);setConfirming(false);setCancelError(null);try{const result=await getOrderByLookup({phone,lastDigits});if(!result){setState("not_found");return;}setOrder(result);setState("found");}catch{setState("error");}}
-  async function handleCancel(){if(!order||cancelling)return;setCancelling(true);setCancelError(null);try{const result=await cancelConsumerOrder(order.id);setOrder({...order,status:result.status||"cancelled"});setConfirming(false);}catch(error){const message=error instanceof Error?error.message:"";setCancelError(/status|state|cancel/i.test(message)?"注文状態が変わったためキャンセルできない可能性があります。もう一度注文を照会してください。":"キャンセル処理に失敗しました。時間をおいて再度お試しください。");}finally{setCancelling(false);}}
-  const canCancel=order?CANCELLABLE.has(order.status.toLowerCase()):false;
-  return <div className="max-w-xl"><h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">Order Lookup</h1><p className="text-sm text-n1 mb-8">ご注文時の電話番号と注文番号の下4桁で、店舗受け取り注文を確認できます。</p>
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4"><div><label className="block text-xs text-n1 mb-1">電話番号</label><input value={phone} onChange={(e)=>setPhone(e.target.value)} required type="tel" inputMode="tel" placeholder="090-1234-5678" className="w-full border border-s2/60 px-3 py-2 text-sm bg-p1 text-p2 focus:outline-none focus:border-p2"/></div><div><label className="block text-xs text-n1 mb-1">注文番号の下4桁</label><input value={lastDigits} onChange={(e)=>setLastDigits(e.target.value)} required minLength={4} maxLength={32} placeholder="A1B2" className="w-full border border-s2/60 px-3 py-2 text-sm bg-p1 text-p2 uppercase focus:outline-none focus:border-p2"/></div><button type="submit" disabled={state==="loading"} className="mt-2 py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 disabled:opacity-50">{state==="loading"?"確認中...":"注文を確認する"}</button></form>
-    {state==="not_found"&&<p className="mt-6 text-sm text-s1">該当する注文が見つかりませんでした。入力内容をご確認ください。</p>}{state==="error"&&<p className="mt-6 text-sm text-s1">注文確認に失敗しました。時間をおいて再度お試しください。</p>}
-    {order&&<section className="mt-8 border border-s2/40 bg-white p-4"><div className="flex items-start justify-between gap-4 border-b border-s2/30 pb-4 mb-4"><div><p className="text-xs text-n1">注文番号</p><p className="font-serif-en text-lg tracking-widest text-p2">{formatOrderId(order.id)}</p></div><div className="text-right"><p className="text-xs text-n1">注文日時</p><p className="text-sm text-p2">{formatDate(order.createdAt)}</p></div></div><dl className="grid grid-cols-2 gap-3 text-sm mb-4"><div><dt className="text-xs text-n1">お名前</dt><dd className="text-p2">{order.shippingName??"-"}</dd></div><div><dt className="text-xs text-n1">お支払い</dt><dd className="text-p2">{order.paymentStatus}</dd></div><div><dt className="text-xs text-n1">注文状態</dt><dd className="text-p2">{order.status}</dd></div><div><dt className="text-xs text-n1">受け取り方法</dt><dd className="text-p2">{order.fulfillmentMethod??"pickup"}</dd></div></dl><div className="divide-y divide-s2/30">{order.items.map((item)=><div key={item.id} className="py-3 flex justify-between gap-4 text-sm"><div><p className="text-p2">{item.productName}</p><p className="text-xs text-n1">数量 {item.quantity}</p></div></div>)}</div>
-      {order.status.toLowerCase()==="cancelled"?<div className="mt-5 border border-s2/40 bg-p1 p-4 text-sm text-p2">この注文はキャンセル済みです。</div>:canCancel?<div className="mt-5 pt-4 border-t border-s2/30">{!confirming?<button type="button" onClick={()=>setConfirming(true)} className="text-sm text-s1 underline">この注文をキャンセルする</button>:<div className="border border-s1/40 bg-p1 p-4"><p className="text-sm text-p2 mb-3">この注文をキャンセルしますか？ 在庫確保が解除されます。</p><div className="flex gap-2"><button type="button" onClick={()=>setConfirming(false)} disabled={cancelling} className="px-4 py-2 border border-s2 text-p2 text-sm">戻る</button><button type="button" onClick={handleCancel} disabled={cancelling} className="px-4 py-2 bg-s1 text-p1 text-sm disabled:opacity-50">{cancelling?"キャンセル中...":"キャンセルを確定"}</button></div></div>}{cancelError&&<p role="alert" className="text-sm text-s1 mt-3">{cancelError}</p>}</div>:<div className="mt-5 pt-4 border-t border-s2/30"><p className="text-xs text-n1">現在の注文状態ではオンラインからキャンセルできません。必要な場合はお問い合わせください。</p><Link href="/contact" className="text-sm text-p2 underline mt-2 inline-block">お問い合わせ</Link></div>}
-    </section>}
-    <Link href="/shop" className="text-sm text-n1 hover:text-p2 mt-8 inline-block">← ショップに戻る</Link>
-  </div>;
+  const router = useRouter();
+  const [phone, setPhone] = useState("");
+  const [lastDigits, setLastDigits] = useState("");
+  const [state, setState] = useState<LookupState>("idle");
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setState("loading");
+    try {
+      // The pair is the evidence; an order number on its own is not. Field
+      // answers a wrong pair and an unused phone number identically, so a miss
+      // here confirms nothing about either.
+      const result = await lookupOrder({ phone, lastDigits });
+      if (!result) {
+        setState("not_found");
+        return;
+      }
+      if (result.order.fulfillmentMethod === "delivery") {
+        saveDeliveryOrderView(result);
+        router.push("/shop/orders/delivery");
+        return;
+      }
+      saveOrderView(result);
+      router.push(`/shop/orders/detail?order=${encodeURIComponent(result.order.id)}`);
+    } catch (cause) {
+      setState(isRateLimited(cause) ? "busy" : "error");
+    }
+  }
+
+  return (
+    <div className="max-w-xl">
+      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">Order Lookup</h1>
+      <p className="text-sm text-n1 mb-8">ご注文時の電話番号と注文番号の下4桁で注文を確認できます。</p>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div><label htmlFor="lookup-phone" className="block text-xs text-n1 mb-1">電話番号</label><input id="lookup-phone" value={phone} onChange={(event) => setPhone(event.target.value)} required type="tel" inputMode="tel" autoComplete="tel" placeholder="090-1234-5678" className="w-full border border-s2/60 px-3 py-2 text-base sm:text-sm bg-p1 text-p2 focus:outline-none focus:border-p2" /></div>
+        <div><label htmlFor="lookup-digits" className="block text-xs text-n1 mb-1">注文番号の下4桁</label><input id="lookup-digits" value={lastDigits} onChange={(event) => setLastDigits(event.target.value)} required minLength={4} maxLength={32} placeholder="A1B2" className="w-full border border-s2/60 px-3 py-2 text-base sm:text-sm bg-p1 text-p2 uppercase focus:outline-none focus:border-p2" /></div>
+        <button type="submit" disabled={state === "loading"} className="mt-2 py-3 bg-p2 text-p1 text-sm tracking-widest hover:bg-p3 disabled:opacity-50">{state === "loading" ? "確認中..." : "注文を確認する"}</button>
+      </form>
+      {state === "not_found" && <p role="alert" className="mt-6 text-sm text-s1">該当する注文が見つかりませんでした。入力内容をご確認ください。</p>}
+      {state === "busy" && <p role="alert" className="mt-6 text-sm text-s1">注文確認が混み合っています。少し時間をおいてからお試しください。</p>}
+      {state === "error" && <p role="alert" className="mt-6 text-sm text-s1">注文確認に失敗しました。時間をおいて再度お試しください。</p>}
+      <Link href="/shop" className="text-sm text-n1 hover:text-p2 mt-8 inline-block">← ショップに戻る</Link>
+    </div>
+  );
 }

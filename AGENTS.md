@@ -1,9 +1,11 @@
 # THE WAN STANDARD — Shop (agents guide)
 
 <!-- BEGIN:nextjs-agent-rules -->
+<!-- BEGIN:nextjs-agent-rules -->
 ## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
 <!-- END:nextjs-agent-rules -->
 
 このリポジトリは **THE WAN STANDARD**（以下 TWS / 社内略称）オンラインショップの実装。bakuure API (storekit) のリファレンス実装でもある。
@@ -61,17 +63,23 @@ This version has breaking changes — APIs, conventions, and file structure may 
 src/
 ├── app/         # Next.js App Router ページ
 ├── components/  # UI コンポーネント
-└── lib/         # storekit.ts(bakuure API 抽象レイヤー)
+└── lib/         # storekit.ts(Field 公開ストアフロントの抽象レイヤー)
 ```
 
-`src/lib/storekit.ts` は bakuure API の抽象レイヤー。将来 [bakuure-storekit](https://github.com/quantum-box/bakuure-storekit) が公開されたら import を差し替える。
+`src/lib/storekit.ts` は Field 公開ストアフロント(`/v1/public/storefront/{tenant_id}/…`)の抽象レイヤー。HTTP は `src/lib/storekit-client.ts` が担当し、wire 型は tachyonfield の `Public*` schema をなぞっている。
+
+**ブラウザに Field の資格情報を出さない**。`/v1/graphql` と `/v1/storekit` は quarantine 済みか Bearer 必須で、未認証呼び出しの `x-operator-id` によるテナント選択も Field 側が拒否する。テナントは URL パスで渡す。`npm run scan:browser-surface` がビルド成果物を検査してこれを守る。
+
+同じ contract から [field-sdk](https://github.com/quantum-box/field-sdk) が `@tachyon-sdk/field` を生成しているが、npm 未公開かつ package がサブディレクトリにあり npm の git dependency では入らないため、当面は上記の薄いクライアントを使う。npm に載ったら差し替える。
 
 ### 環境変数
 
+ショップ動作に必須の環境変数は無い。API オリジンとテナント ID は静的出力へ確実に載せるため `src/lib/storekit-config.ts` の定数として持つ。
+
 | 変数名 | 説明 |
 |--------|------|
-| `NEXT_PUBLIC_API_BASE_URL` | bakuure API のベース URL |
-| `NEXT_PUBLIC_OPERATOR_ID` | TWS テナントのオペレーター ID |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | 任意。Google Analytics の Measurement ID |
+| `NEXT_PUBLIC_LINE_URL` | 任意。`/thanks` で使う LINE URL |
 
 ### コマンド
 
@@ -146,17 +154,29 @@ PLACED → CANCELED
 | store | 受け取り管理(READY / PICKED_UP 更新) |
 | admin | 商品・在庫・注文・クーポン・レポート全管理 |
 
-### API(MVP)
+### shop が使う公開ルート
+
+`/v1/public/storefront/{tenant_id}` 配下。すべて無認証で、テナント単位のレート制限がかかる。
+
 | エンドポイント | 説明 |
 |---|---|
-| `GET /api/products` | 商品一覧 |
-| `GET /api/products/[slug]` | 商品詳細 |
-| `POST /api/coupons/validate` | クーポン検証(レート制限付き) |
-| `POST /api/orders` | 注文作成(サーバ側金額再計算) |
-| `POST /api/orders/{id}/ready` | 準備完了更新 |
-| `POST /api/orders/{id}/pickup` | 受け取り完了更新 |
-| `GET /api/reports/payout` | 還元集計 |
-| `GET /api/reports/payout.csv` | 還元集計 CSV |
+| `GET products` | 商品一覧(`orderable` を含む) |
+| `GET products/{product_id}` | 商品詳細 |
+| `GET categories` | カテゴリ一覧 |
+| `POST carts` / `GET carts/{id}` / `POST carts/{id}/items` ほか | カート一式 |
+| `POST carts/{cart_id}/coupon-preview` | クーポン提示(そのカートの算術のみ) |
+| `POST checkout_sessions` | 注文作成(`coupon_code` を受ける。サーバ側金額再計算) |
+| `POST orders/lookup` | 電話番号 + 注文番号下4桁 → 短命 lookup token |
+| `GET orders/by-token/{lookup_token}` | token による注文再読み取り |
+
+公開面の制約はそのまま UI の制約になる。
+
+- **在庫**は `orderable` の1ビットだけ。残数・予約数・低在庫閾値は出ない。
+- **クーポン**はカート識別子を持っている呼び出し側にしか問えない。応答はそのカートの小計・割引額・合計だけで、クーポン ID も割引種別も期限も返らない。存在しない・期限切れ・最低額未満はすべて同じ 404。
+- **注文照会**は識別子では引けない。組違いも未使用の電話番号も同じ 404。`GET orders/{id}` は公開面の外。
+- クーポン提示と注文照会は 20/min/tenant。明示的な操作でだけ発火させる。
+
+店舗・管理系(`ready` / `pickup` / 還元レポート)は公開面には無い。Bearer を持つ運用画面の担当。
 
 ### セキュリティ(MVP)
 - クーポン検証 API のレート制限(ブルートフォース対策)
@@ -218,4 +238,4 @@ PLACED → CANCELED
 
 ### 関連リポジトリ
 - bakuure API 本体: `github.com/quantum-box/tachyon-apps`
-- 将来の抽象化先: `github.com/quantum-box/bakuure-storekit`(未公開)
+- 生成 SDK: `github.com/quantum-box/field-sdk`(`@tachyon-sdk/field` / npm 未公開)

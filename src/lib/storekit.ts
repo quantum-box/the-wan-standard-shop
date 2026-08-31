@@ -1,286 +1,201 @@
-/**
- * Abstraction layer for bakuure-storekit.
- * Replace with `import { ... } from 'bakuure-storekit'` once the SDK is published.
- * See: https://github.com/quantum-box/bakuure-storekit (WIP)
- */
+// Application-facing storefront layer. Everything below is served by Field's
+// public storefront routes (see `storekit-client.ts`), so no page in this app
+// ever needs a Field credential in the browser.
+import * as storefront from "./storekit-client";
+import { isNotFound, toYen } from "./storekit-client";
+import { toProduct, type Product } from "./storekit-product";
 
-// The static export bakes this production origin into the client bundle at build time.
-// Runtime Cloud App environment variables are intentionally not read here.
-const API_BASE = "https://tachyon-field-api.txcloud.app";
-const OPERATOR_ID = "tn_01kptmrtgnm746m5mpr78e2esd";
-const STORAGE_CDN_BASE = "https://cdn.txcloud.app";
+export type { Product } from "./storekit-product";
+export { isRateLimited } from "./storekit-client";
 
-export interface Product {
+export interface StoreCategory {
   id: string;
   name: string;
-  description: string;
-  price: number;
-  imageUrl: string | null;
-  stock: number;
-  category: string | null;
-}
-
-interface GraphqlResponse<T> {
-  data?: T;
-  errors?: Array<{ message: string }>;
-}
-
-interface StorefrontProduct {
-  id: string;
-  name: string;
-  description: string | null;
-  listPrice: number;
-  imageIds: string[];
-  categoryId: string | null;
-}
-
-interface ProductStock {
-  quantityAvailable: number;
-  trackInventory: boolean;
+  slug: string;
+  parentId: string | null;
+  sortOrder: number;
 }
 
 export interface CartItem {
   itemId: string;
   productId: string;
   quantity: number;
+  /** Effective price per unit, as the server resolved it from the catalog. */
+  unitPrice: number;
+  subtotal: number;
   product: Product;
 }
 
 export interface Cart {
   id: string;
   items: CartItem[];
+  subtotal: number;
 }
 
-export interface OrderInput {
+export interface CouponPreview {
+  code: string;
+  subtotal: number;
+  discount: number;
+  total: number;
+}
+
+export type FulfillmentMethod = "pickup" | "delivery";
+export type PaymentMethod = "in_store" | "online";
+
+export interface PlaceOrderInput {
   cartId: string;
   name: string;
   phone: string;
   email?: string;
+  fulfillmentMethod: FulfillmentMethod;
+  paymentMethod: PaymentMethod;
+  shippingAddress?: string;
+  couponCode?: string;
+  successUrl?: string;
+  cancelUrl?: string;
 }
 
-interface GqlCartItem {
-  id: string;
-  productId: string;
-  quantity: number;
-}
-
-interface GqlCart {
-  id: string;
-  items: GqlCartItem[];
-}
-
-interface GqlConsumerOrder {
-  id: string;
-  checkoutUrl: string | null;
-}
-
-export interface OrderLookupItem {
+export interface OrderItemSummary {
   id: string;
   productName: string;
   quantity: number;
-  subtotalNanodollar: string;
+  unitPrice: number;
+  subtotal: number;
 }
 
-export interface OrderLookupResult {
+/**
+ * What the public surface will say about an order. Contact details, the
+ * shipping address and the customer record are not echoed back — a caller
+ * holding the phone/digits pair learns no more than the confirmation screen
+ * already showed at checkout.
+ */
+export interface OrderSummary {
   id: string;
   status: string;
   paymentStatus: string;
   fulfillmentMethod: string | null;
-  shippingName: string | null;
-  totalNanodollar: string;
+  items: OrderItemSummary[];
+  subtotal: number;
+  shippingFee: number;
+  total: number;
   createdAt: string;
-  items: OrderLookupItem[];
+  pickupDeadline: string | null;
 }
 
-interface GqlOrderLookupPayload {
-  order: OrderLookupResult;
+export interface OrderLookup {
+  order: OrderSummary;
   lookupToken: string;
   expiresAt: string;
 }
 
-async function graphqlFetch<T>(
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
-  const res = await fetch(`${API_BASE}/v1/graphql`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-operator-id": OPERATOR_ID,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!res.ok) throw new Error(`GraphQL API error: ${res.status}`);
-
-  const payload = (await res.json()) as GraphqlResponse<T>;
-  if (payload.errors?.length) {
-    throw new Error(payload.errors.map((error) => error.message).join("; "));
-  }
-  if (!payload.data) throw new Error("GraphQL API error: missing data");
-  return payload.data;
-}
-
-function imageIdToUrl(imageId: string | undefined): string | null {
-  if (!imageId) return null;
-  if (imageId.startsWith("http://") || imageId.startsWith("https://")) return imageId;
-  const key = imageId.replace(/^\/+/, "");
-  return `${STORAGE_CDN_BASE}/cdn-cgi/image/w=800,q=80,f=auto/${key}`;
-}
-
-function toProduct(product: StorefrontProduct, stock?: ProductStock): Product {
+function toOrderSummary(order: storefront.PublicOrder): OrderSummary {
   return {
-    id: product.id,
-    name: product.name,
-    description: product.description ?? "",
-    price: product.listPrice,
-    imageUrl: imageIdToUrl(product.imageIds[0]),
-    stock: stock?.trackInventory ? stock.quantityAvailable : 99,
-    category: product.categoryId,
+    id: order.id,
+    status: order.status,
+    paymentStatus: order.payment_status,
+    fulfillmentMethod: order.fulfillment_method ?? null,
+    items: order.items.map((item) => ({
+      id: item.id,
+      productName: item.product_name,
+      quantity: item.quantity,
+      unitPrice: toYen(item.unit_price_nanodollar),
+      subtotal: toYen(item.subtotal_nanodollar),
+    })),
+    subtotal: toYen(order.subtotal_nanodollar),
+    shippingFee: toYen(order.shipping_fee_nanodollar),
+    total: toYen(order.total_nanodollar),
+    createdAt: order.created_at,
+    pickupDeadline: order.pickup_deadline ?? null,
   };
 }
 
-function getSessionId(): string {
-  if (typeof window === "undefined") return crypto.randomUUID();
-  let sid = localStorage.getItem("tws_session_id");
-  if (!sid) {
-    sid = crypto.randomUUID();
-    localStorage.setItem("tws_session_id", sid);
-  }
-  return sid;
-}
-
-async function enrichCart(gqlCart: GqlCart): Promise<Cart> {
+/**
+ * A cart line names a product id and nothing else, so the catalog rows are
+ * fetched alongside it to render names, images and the sold-out state.
+ */
+async function enrichCart(cart: storefront.PublicCart): Promise<Cart> {
   const items = await Promise.all(
-    gqlCart.items.map(async (item) => {
-      const product = await getProduct(item.productId);
-      return {
-        itemId: item.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        product,
-      };
-    })
+    cart.items.map(async (item) => ({
+      itemId: item.id,
+      productId: item.product_id,
+      quantity: item.quantity,
+      unitPrice: toYen(item.unit_price_nanodollar),
+      subtotal: toYen(item.subtotal_nanodollar),
+      product: await getProduct(item.product_id),
+    }))
   );
-  return { id: gqlCart.id, items };
+  return { id: cart.id, items, subtotal: toYen(cart.subtotal_nanodollar) };
 }
 
-async function getProductStock(productId: string): Promise<ProductStock | undefined> {
-  const data = await graphqlFetch<{ productStock: ProductStock | null }>(
-    `query ProductStock($productId: ID!) {
-      productStock(productId: $productId) {
-        quantityAvailable
-        trackInventory
-      }
-    }`,
-    { productId }
-  );
-  return data.productStock ?? undefined;
-}
-
+/**
+ * Goes through the Pages Function rather than Field directly: the aggregate is
+ * cached at the edge for a minute, which keeps the listing off the tenant's
+ * public read budget on every page view.
+ */
 export async function getProducts(): Promise<Product[]> {
-  const data = await graphqlFetch<{
-    storefrontProducts: { items: StorefrontProduct[] };
-  }>(
-    `query StorefrontProducts($limit: Int!, $offset: Int!) {
-      storefrontProducts(limit: $limit, offset: $offset) {
-        items {
-          id
-          name
-          description
-          listPrice
-          imageIds
-          categoryId
-        }
-      }
-    }`,
-    { limit: 100, offset: 0 }
-  );
+  const response = await fetch("/api/storefront/products", {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error(`Storefront products error: ${response.status}`);
+  }
+  const payload = (await response.json()) as {
+    products?: Product[];
+    error?: string;
+    errors?: Array<{ message: string }>;
+  };
+  if (!Array.isArray(payload.products)) {
+    const message =
+      payload.error ??
+      payload.errors?.map((error) => error.message).join("; ") ??
+      "Storefront products error: invalid response";
+    throw new Error(message);
+  }
+  return payload.products;
+}
 
-  const items = data.storefrontProducts.items;
-  const stocks = await Promise.all(
-    items.map((product) => getProductStock(product.id).catch(() => undefined))
-  );
-  return items.map((product, index) => toProduct(product, stocks[index]));
+export async function getCategories(): Promise<StoreCategory[]> {
+  const categories = await storefront.listCategories();
+  return categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    parentId: category.parent_id ?? null,
+    sortOrder: category.sort_order,
+  }));
 }
 
 export async function getProduct(id: string): Promise<Product> {
-  const data = await graphqlFetch<{
-    storefrontProduct: StorefrontProduct;
-    productStock: ProductStock;
-  }>(
-    `query StorefrontProduct($productId: ID!) {
-      storefrontProduct(productId: $productId) {
-        id
-        name
-        description
-        listPrice
-        imageIds
-        categoryId
-      }
-      productStock(productId: $productId) {
-        quantityAvailable
-        trackInventory
-      }
-    }`,
-    { productId: id }
-  );
-
-  return toProduct(data.storefrontProduct, data.productStock);
+  return toProduct(await storefront.getProduct(id));
 }
 
 export async function getCart(cartId: string): Promise<Cart> {
-  const data = await graphqlFetch<{ cart: GqlCart }>(
-    `query GetCart($cartId: ID!) {
-      cart(cartId: $cartId) {
-        id
-        items {
-          id
-          productId
-          quantity
-        }
-      }
-    }`,
-    { cartId }
-  );
-  return enrichCart(data.cart);
+  return enrichCart(await storefront.getCart(cartId));
 }
 
+/**
+ * Public carts expire, and the identifier the browser kept outlives them. A
+ * stale one would otherwise make "add to cart" fail for good, so a 404 is
+ * treated as "no cart yet" and a fresh one is opened.
+ */
 export async function addToCart(
   cartId: string | null,
   productId: string,
   quantity: number
 ): Promise<Cart> {
-  let actualCartId = cartId;
-
-  if (!actualCartId) {
-    const sessionId = getSessionId();
-    const createData = await graphqlFetch<{ createCart: { id: string } }>(
-      `mutation CreateCart($sessionId: String) {
-        createCart(input: { sessionId: $sessionId }) {
-          id
-        }
-      }`,
-      { sessionId }
-    );
-    actualCartId = createData.createCart.id;
+  if (cartId) {
+    try {
+      return enrichCart(
+        await storefront.addCartItem(cartId, { productId, quantity })
+      );
+    } catch (error) {
+      if (!isNotFound(error)) throw error;
+    }
   }
-
-  const data = await graphqlFetch<{ addCartItem: GqlCart }>(
-    `mutation AddCartItem($cartId: ID!, $productId: String!, $quantity: Int!) {
-      addCartItem(cartId: $cartId, input: { productId: $productId, quantity: $quantity }) {
-        id
-        items {
-          id
-          productId
-          quantity
-        }
-      }
-    }`,
-    { cartId: actualCartId, productId, quantity }
+  const opened = await storefront.createCart();
+  return enrichCart(
+    await storefront.addCartItem(opened.id, { productId, quantity })
   );
-
-  return enrichCart(data.addCartItem);
 }
 
 export async function updateCartItem(
@@ -288,113 +203,95 @@ export async function updateCartItem(
   itemId: string,
   quantity: number
 ): Promise<Cart> {
-  const data = await graphqlFetch<{ updateCartItem: GqlCart }>(
-    `mutation UpdateCartItem($cartId: ID!, $itemId: ID!, $quantity: Int!) {
-      updateCartItem(cartId: $cartId, itemId: $itemId, input: { quantity: $quantity }) {
-        id
-        items {
-          id
-          productId
-          quantity
-        }
-      }
-    }`,
-    { cartId, itemId, quantity }
-  );
-  return enrichCart(data.updateCartItem);
+  return enrichCart(await storefront.updateCartItem(cartId, itemId, quantity));
 }
 
 export async function removeCartItem(
   cartId: string,
   itemId: string
 ): Promise<Cart> {
-  await graphqlFetch<{ removeCartItem: boolean }>(
-    `mutation RemoveCartItem($cartId: ID!, $itemId: ID!) {
-      removeCartItem(cartId: $cartId, itemId: $itemId)
-    }`,
-    { cartId, itemId }
-  );
+  await storefront.removeCartItem(cartId, itemId);
   return getCart(cartId);
 }
 
-export async function createOrder(
-  input: OrderInput
-): Promise<{ id: string; checkoutUrl: string | null }> {
-  const data = await graphqlFetch<{ checkout: GqlConsumerOrder }>(
-    `mutation Checkout($input: CheckoutInput!) {
-      checkout(input: $input) {
-        id
-        checkoutUrl
-      }
-    }`,
-    {
-      input: {
-        cartId: input.cartId,
-        fulfillmentMethod: "pickup",
-        paymentMethod: "in_store",
-        shippingName: input.name,
-        shippingPhone: input.phone,
-        customerEmail: input.email,
-      },
-    }
-  );
-  return {
-    id: data.checkout.id,
-    checkoutUrl: data.checkout.checkoutUrl ?? null,
-  };
+/**
+ * Prices one member coupon against one cart (PLT-537). Returns null when the
+ * code does not apply — Field collapses "no such code", "expired" and "under
+ * the minimum" into the same 404 so working through a code space learns
+ * nothing, which means the UI can only ever say "this code cannot be used".
+ */
+export async function previewCoupon(
+  cartId: string,
+  code: string
+): Promise<CouponPreview | null> {
+  try {
+    const preview = await storefront.previewCoupon(cartId, code);
+    return {
+      code: preview.code,
+      subtotal: toYen(preview.subtotal_nanodollar),
+      discount: toYen(preview.discount_nanodollar),
+      total: toYen(preview.total_nanodollar),
+    };
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw error;
+  }
 }
 
-export async function getOrderByLookup(input: {
+/**
+ * Places the order. The coupon is re-validated and re-priced server-side, so a
+ * code that stopped applying between the preview and here fails the checkout
+ * rather than quietly going through at full price.
+ */
+export async function placeOrder(
+  input: PlaceOrderInput
+): Promise<OrderSummary & { checkoutUrl: string | null }> {
+  const order = await storefront.checkout({
+    cart_id: input.cartId,
+    fulfillment_method: input.fulfillmentMethod,
+    payment_method: input.paymentMethod,
+    shipping_name: input.name,
+    shipping_phone: input.phone,
+    shipping_address: input.shippingAddress,
+    customer_email: input.email,
+    coupon_code: input.couponCode,
+    success_url: input.successUrl,
+    cancel_url: input.cancelUrl,
+  });
+  return { ...toOrderSummary(order), checkoutUrl: order.checkout_url ?? null };
+}
+
+/**
+ * Order enquiry (PET-739). Field takes the phone number and the receipt digits
+ * rather than an order identifier, and hands back a short-lived token for the
+ * one re-read that may follow. A wrong pair and an unused phone number are the
+ * same 404, so a miss confirms nothing.
+ */
+export async function lookupOrder(input: {
   phone: string;
   lastDigits: string;
-}): Promise<OrderLookupResult | null> {
+}): Promise<OrderLookup | null> {
   try {
-    const lookupData = await graphqlFetch<{
-      consumerOrderByLookup: GqlOrderLookupPayload;
-    }>(
-      `mutation ConsumerOrderByLookup($input: ConsumerOrderLookupInput!) {
-        consumerOrderByLookup(input: $input) {
-          lookupToken
-          order {
-            id
-          }
-        }
-      }`,
-      { input }
-    );
-
-    const detailData = await graphqlFetch<{
-      consumerOrderByLookupToken: OrderLookupResult | null;
-    }>(
-      `query ConsumerOrderByLookupToken($lookupToken: String!) {
-        consumerOrderByLookupToken(lookupToken: $lookupToken) {
-          id
-          status
-          paymentStatus
-          fulfillmentMethod
-          shippingName
-          totalNanodollar
-          createdAt
-          items {
-            id
-            productName
-            quantity
-            subtotalNanodollar
-          }
-        }
-      }`,
-      { lookupToken: lookupData.consumerOrderByLookup.lookupToken }
-    );
-
-    return detailData.consumerOrderByLookupToken;
+    const result = await storefront.lookupOrder(input);
+    return {
+      order: toOrderSummary(result.order),
+      lookupToken: result.lookup_token,
+      expiresAt: result.expires_at,
+    };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    if (
-      message.includes("Order lookup not found") ||
-      message.includes("not found")
-    ) {
-      return null;
-    }
+    if (isNotFound(error)) return null;
+    throw error;
+  }
+}
+
+/** Re-reads an order with the lookup token. Null once the token has expired. */
+export async function refreshOrder(
+  lookupToken: string
+): Promise<OrderSummary | null> {
+  try {
+    return toOrderSummary(await storefront.getOrderByLookupToken(lookupToken));
+  } catch (error) {
+    if (isNotFound(error)) return null;
     throw error;
   }
 }

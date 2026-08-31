@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { BrandLockup } from '@/components/BrandLockup'
 import Nav from '@/components/Nav'
 import ScenesSection from '@/components/ScenesSection'
+import UseCaseCards from '@/components/UseCaseCards'
+import FeaturedProductsMock from '@/components/FeaturedProductsMock'
 
 export default function Home() {
   return (
@@ -22,21 +24,32 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-p3/60" />
 
-        <div className="absolute bottom-0 left-0 px-10 md:px-20 pb-20 md:pb-28 max-w-3xl">
+        <div className="absolute bottom-0 left-0 px-8 md:px-20 pb-16 md:pb-28 max-w-3xl">
           <p className="font-serif-en font-light tracking-[0.5em] text-s2 text-sm mb-6 uppercase">
             THE WAN STANDARD
           </p>
-          <h1 className="font-serif-ja font-semibold text-5xl md:text-7xl leading-tight text-p1 mb-8">
+          <h1 className="font-serif-ja font-semibold text-5xl md:text-7xl leading-tight text-p1 mb-7">
             愛犬のための、
             <br />
             新しい基準。
           </h1>
-          <Link
-            href="/shop"
-            className="inline-block bg-p2 text-p1 px-10 py-4 text-xs tracking-[0.3em] uppercase font-sans-ja hover:bg-s2 hover:text-p3 transition-colors duration-300"
-          >
-            商品を見る
-          </Link>
+          <p className="font-sans-ja text-sm md:text-base text-p1/80 leading-[2] max-w-xl mb-9">
+            毎日口にする器だから、素材も、つくりも、佇まいも。人の食器と同じように、理由を持って選べる一椀を。
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              href="/shop"
+              className="inline-block text-center bg-p2 text-p1 px-10 py-4 text-xs tracking-[0.3em] uppercase font-sans-ja hover:bg-s2 hover:text-p3 transition-colors duration-300"
+            >
+              商品を見る
+            </Link>
+            <Link
+              href="/use/first-bowl"
+              className="inline-block text-center border border-p1/50 text-p1 px-10 py-4 text-xs tracking-[0.2em] font-sans-ja hover:border-s2 hover:text-s2 transition-colors duration-300"
+            >
+              はじめての選び方
+            </Link>
+          </div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-s2/60 to-transparent" />
@@ -82,9 +95,62 @@ export default function Home() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          USE CASE DISCOVERY
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <UseCaseCards />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          FEATURED PRODUCTS MOCK
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <FeaturedProductsMock />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           SCENE CAROUSEL SECTION
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <ScenesSection />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          CHOOSING GUIDE
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="bg-p1">
+        <div className="grid md:grid-cols-2 min-h-[640px]">
+          <div className="relative min-h-[420px] md:min-h-full order-2 md:order-1">
+            <Image
+              src="/assets/tws-creative/tws-scene-store-pickup-2.jpeg"
+              alt="THE WAN STANDARDの店舗受け取り"
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div className="px-8 md:px-16 py-20 md:py-28 flex flex-col justify-center order-1 md:order-2">
+            <p className="font-serif-en font-light tracking-[0.4em] text-s2 text-xs uppercase mb-8">
+              From Choice to Everyday
+            </p>
+            <h2 className="font-serif-ja font-semibold text-3xl md:text-5xl text-p2 leading-snug mb-8">
+              選ぶところから、
+              <br />
+              暮らしまで。
+            </h2>
+            <p className="font-sans-ja text-sm text-n1 leading-[2] mb-10 max-w-xl">
+              サイズに迷ったら選び方ガイドへ。実物を受け取りたいなら店舗受け取りへ。THE WAN STANDARDは、商品を並べるだけでなく、愛犬に合う一椀を選び切るところまで支えます。
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/guide/size"
+                className="inline-block text-center bg-p2 text-p1 px-8 py-4 text-xs tracking-[0.2em] hover:bg-p3 transition-colors"
+              >
+                サイズ・商品の選び方
+              </Link>
+              <Link
+                href="/pickup"
+                className="inline-block text-center border border-p2/40 text-p2 px-8 py-4 text-xs tracking-[0.2em] hover:border-p2 transition-colors"
+              >
+                店舗受け取りについて
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           BRAND PROMISE SECTION
