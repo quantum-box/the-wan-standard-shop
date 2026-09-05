@@ -45,6 +45,7 @@
 .textLink { display: inline-flex; align-items: center; gap: 20px; min-height: 44px; width: fit-content; border-bottom: 1px solid currentColor; font-size: 12px; letter-spacing: 0.025em; line-height: 1.7; color: inherit; }
 .textLink:hover { border-bottom-color: transparent; }
 .heroNote { margin-top: 64px; color: var(--home-muted); font-family: var(--font-serif-en, "Cormorant Garamond"), serif; font-size: 12px; letter-spacing: 0.14em; }
+.heroFigure { min-width: 0; }
 .heroPhoto { position: relative; aspect-ratio: 6 / 5; min-height: 440px; background: #e4dbcd; overflow: hidden; }
 .photo { object-fit: cover; }
 .photoCaption { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px 16px; margin-top: 14px; color: var(--home-muted); font-size: 10px; line-height: 1.8; }
@@ -60,7 +61,7 @@
 
 .section { padding-block: 100px; }
 .sectionHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; margin-bottom: 40px; }
-.sectionTitle { margin-top: 17px; font-family: var(--font-serif-ja, "Noto Serif JP"), serif; font-size: clamp(26px, 2.5vw, 36px); line-height: 1.7; letter-spacing: 0.035em; font-weight: 400; }
+.sectionTitle { text-wrap: balance; margin-top: 17px; font-family: var(--font-serif-ja, "Noto Serif JP"), serif; font-size: clamp(26px, 2.5vw, 36px); line-height: 1.7; letter-spacing: 0.035em; font-weight: 400; }
 .selectionGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
 .selectionCard { min-width: 0; display: block; color: var(--home-ink); }
 .selectionPhoto { position: relative; aspect-ratio: 1 / 1; background: #e4dbcd; overflow: hidden; }
