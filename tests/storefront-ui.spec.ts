@@ -131,7 +131,7 @@ test('catalog error retries and empty state is not an error', async ({ page }) =
   const api = await storefront(page)
   api.failProducts = true
   await page.goto('/shop')
-  await expect(page.getByRole('alert')).toContainText('読み込めませんでした')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('読み込めませんでした')
   api.failProducts = false
   api.empty = true
   await page.getByRole('button', { name: '再読み込み' }).click()
@@ -157,13 +157,13 @@ test('cart preserves its identifier on outage; unavailable items block checkout'
   const api = await storefront(page, true)
   api.failCart = true
   await page.goto('/shop/cart')
-  await expect(page.getByRole('alert')).toContainText('カートを読み込めませんでした')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('カートを読み込めませんでした')
   expect(await page.evaluate(() => localStorage.getItem('tws_cart_id'))).toBe('review-cart')
   api.failCart = false
   api.soldOut = true
   await page.getByRole('button', { name: '再読み込み' }).click()
   await expect(page.getByRole('button', { name: 'レジに進む' })).toBeDisabled()
-  await expect(page.getByRole('alert')).toContainText('在庫切れの商品')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('在庫切れの商品')
 })
 
 test('checkout labels, fulfillment, explicit coupon and confirmation retain behavior', async ({ page }, info) => {
@@ -173,8 +173,8 @@ test('checkout labels, fulfillment, explicit coupon and confirmation retain beha
   await page.getByLabel('お名前 *', { exact: true }).fill('画面検証')
   await page.getByLabel('電話番号 *', { exact: true }).fill('09000000000')
   await page.getByRole('radio', { name: /配送/ }).locator('..').click()
-  await expect(page.getByLabel('郵便番号 *', { exact: true })).toBeRequired()
-  await expect(page.getByLabel('メールアドレス *', { exact: true })).toBeRequired()
+  await expect(page.getByLabel('郵便番号 *', { exact: true })).toHaveAttribute('required', '')
+  await expect(page.getByLabel('メールアドレス *', { exact: true })).toHaveAttribute('required', '')
   await page.getByRole('radio', { name: /店舗受け取り/ }).locator('..').click()
   await page.getByLabel('クーポンコード', { exact: true }).fill('REVIEW')
   expect(api.calls.filter((call) => call.includes('coupon-preview'))).toHaveLength(0)
@@ -194,10 +194,10 @@ test('lookup only submits explicitly, with non-disclosing errors and rate limiti
   await page.getByLabel('注文番号の下4桁', { exact: true }).fill('TEST')
   expect(api.calls.filter((call) => call.includes('orders/lookup'))).toHaveLength(0)
   await page.getByRole('button', { name: '注文を確認する', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('該当する注文が見つかりませんでした')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('該当する注文が見つかりませんでした')
   api.lookupStatus = 429
   await page.getByRole('button', { name: '注文を確認する', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('混み合っています')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('混み合っています')
 })
 
 test('lifestyle dog images use the approved breeds; receipt-free thanks is neutral', async ({ page }) => {
