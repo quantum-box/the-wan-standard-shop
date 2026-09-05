@@ -1,3 +1,4 @@
+import { homeDogImages } from '@/lib/homepage-content'
 import type { Metadata } from 'next'
 import UseCaseLanding from '@/components/UseCaseLanding'
 
@@ -12,7 +13,9 @@ export default function FirstBowlPage() {
       eyebrow="First Bowl"
       title="はじめての一椀を、ちゃんと選ぶ。"
       lead="かわいさだけでも、機能だけでもなく。毎日口にするものとして、素材・大きさ・暮らしとの相性から選ぶための入口です。"
-      heroImage="/assets/tws-creative/tws-scene-family-dog-1.jpeg"
+      heroImage={homeDogImages.shiba.src}
+      heroAlt={homeDogImages.shiba.alt}
+      heroBreed={homeDogImages.shiba.breed}
       introTitle="最初の器には、迷わないための基準がいる。"
       introBody="犬用の器は選択肢が多く、見た目だけでは違いが分かりにくいもの。THE WAN STANDARDでは、食品に触れる器として安心して選べること、愛犬の体格に合うこと、そして毎日扱いたくなることを大切にしています。"
       points={[
@@ -25,7 +28,7 @@ export default function FirstBowlPage() {
         { number: '02', title: '必要な大きさを決める', description: '普段の一食分が無理なく収まり、愛犬が自然に口を運べる余白を目安にします。' },
         { number: '03', title: '暮らしに残したい一椀を選ぶ', description: '最後は、毎日置いておきたいと思えるものを。器は愛犬との生活の景色の一部になります。' },
       ]}
-      secondaryImage="/assets/tws-mood-ceramic-texture.jpeg"
+      secondaryImage="/assets/tws-creative/tws-mood-ceramic-texture.jpeg"
       secondaryAlt="陶器の質感"
       ctaTitle="最初の一椀を、ここから。"
       ctaBody="迷ったら、まずはサイズと素材から。商品ページと選び方ガイドを見ながら、愛犬に合う一椀を探してみてください。"

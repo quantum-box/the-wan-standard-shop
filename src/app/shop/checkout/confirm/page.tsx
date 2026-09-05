@@ -159,7 +159,7 @@ export default function CheckoutConfirmPage() {
   }
 
   if (!draft) {
-    return <div className="max-w-lg py-8"><h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">Confirm</h1><p className="text-sm text-n1 mb-5">確認する注文情報がありません。</p><Link href="/shop/checkout" className="text-sm text-p2 underline">チェックアウトに戻る</Link></div>;
+    return <div className="max-w-lg py-8"><h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">注文内容のご確認</h1><p className="text-sm text-n1 mb-5">確認する注文情報がありません。</p><Link href="/shop/checkout" className="text-sm text-p2 underline">チェックアウトに戻る</Link></div>;
   }
 
   const fulfillmentMethod = draft.fulfillmentMethod ?? "pickup";
@@ -173,7 +173,7 @@ export default function CheckoutConfirmPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-2">Confirm</h1>
+      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-2">注文内容のご確認</h1>
       <p className="text-sm text-n1 mb-8">注文を確定する前に、内容をご確認ください。</p>
 
       <section className="border border-s2/40 bg-white mb-6">

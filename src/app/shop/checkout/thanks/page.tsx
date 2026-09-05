@@ -65,8 +65,8 @@ export default function ThanksPage() {
   return (
     <div className="py-10 max-w-2xl mx-auto px-4">
       <div className="text-center mb-8">
-        <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-3">Thank You</h1>
-        <p className="text-sm text-n1">ご注文ありがとうございます。この画面を注文控えとしてご利用ください。</p>
+        <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-3">{receipt ? "ご注文ありがとうございます。" : "ご注文の確認"}</h1>
+        <p className="text-sm text-n1">{receipt ? "この画面を注文控えとしてご利用ください。" : "保存された注文内容がない場合は、注文照会からご確認ください。"}</p>
       </div>
 
       {orderId && (

@@ -41,7 +41,7 @@ export default function OrderLookupPage() {
 
   return (
     <div className="max-w-xl">
-      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">Order Lookup</h1>
+      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">ご注文を確認する</h1>
       <p className="text-sm text-n1 mb-8">ご注文時の電話番号と注文番号の下4桁で注文を確認できます。</p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div><label htmlFor="lookup-phone" className="block text-xs text-n1 mb-1">電話番号</label><input id="lookup-phone" value={phone} onChange={(event) => setPhone(event.target.value)} required type="tel" inputMode="tel" autoComplete="tel" placeholder="090-1234-5678" className="w-full border border-s2/60 px-3 py-2 text-base sm:text-sm bg-p1 text-p2 focus:outline-none focus:border-p2" /></div>

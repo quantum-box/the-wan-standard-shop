@@ -1,3 +1,4 @@
+import { homeDogImages } from '@/lib/homepage-content'
 import type { Metadata } from 'next'
 import UseCaseLanding from '@/components/UseCaseLanding'
 
@@ -12,7 +13,9 @@ export default function EverydayPage() {
       eyebrow="Everyday"
       title="毎日の食事を、暮らしの景色に。"
       lead="朝も夜も、同じ場所で繰り返す食事の時間。だからこそ、愛犬にも飼い主にも気持ちよく続く器を選びたい。"
-      heroImage="/assets/tws-creative/tws-scene-family-dog-2.jpeg"
+      heroImage={homeDogImages.husky.src}
+      heroAlt={homeDogImages.husky.alt}
+      heroBreed={homeDogImages.husky.breed}
       introTitle="日用品だからこそ、基準を上げる。"
       introBody="毎日使う器に必要なのは、特別な日の豪華さではなく、安心して繰り返し使えること。THE WAN STANDARDは、愛犬が口にする器としての品質と、生活空間に自然となじむ佇まいの両方を大切にします。"
       points={[
@@ -25,8 +28,8 @@ export default function EverydayPage() {
         { number: '02', title: '一食分に合う容量を選ぶ', description: 'フードや水が無理なく収まり、日々の量を把握しやすいサイズを基準にします。' },
         { number: '03', title: '毎日見ても好きなものを残す', description: '使いやすさを満たしたら、最後は佇まい。毎日の景色に残したい一椀を選びます。' },
       ]}
-      secondaryImage="/assets/tws-creative/tws-scene-cafe-terrace-1.jpeg"
-      secondaryAlt="犬との穏やかな日常"
+      secondaryImage="/assets/tws-hero/tws-hero-grok-1-overhead-ceramic-bowl.jpeg"
+      secondaryAlt="陶器の器と食事を上から見たブランドイメージ"
       ctaTitle="いつもの食事に、いい基準を。"
       ctaBody="毎日使うものを変えると、暮らしの小さな景色も変わります。愛犬との日常に残したい一椀を探してください。"
     />

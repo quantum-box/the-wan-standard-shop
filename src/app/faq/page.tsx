@@ -1,7 +1,6 @@
+import { PageShell } from "@/components/ui/PageShell";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header } from "@/components/ui/Header";
-import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "よくある質問 | THE WAN STANDARD",
@@ -42,9 +41,7 @@ const groups = [
 
 export default function FaqPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-grow max-w-3xl w-full mx-auto px-4 sm:px-6 py-12">
+    <PageShell>
         <h1 className="font-serif-ja text-2xl md:text-3xl text-p2 mb-3">よくある質問</h1>
         <p className="text-sm text-n1 mb-10">購入前後によくいただく質問をまとめています。</p>
 
@@ -75,8 +72,6 @@ export default function FaqPage() {
             <Link href="/shop/orders/lookup" className="text-p2 underline">注文を確認する</Link>
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+      </PageShell>
   );
 }

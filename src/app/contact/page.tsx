@@ -1,7 +1,6 @@
+import { PageShell } from "@/components/ui/PageShell";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header } from "@/components/ui/Header";
-import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "お問い合わせ | THE WAN STANDARD",
@@ -13,9 +12,7 @@ const EMAIL = "info@quantum-box.com";
 
 export default function ContactPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-grow max-w-3xl w-full mx-auto px-4 sm:px-6 py-12">
+    <PageShell>
         <h1 className="font-serif-ja text-2xl md:text-3xl text-p2 mb-3">お問い合わせ</h1>
         <p className="text-sm text-n1 leading-relaxed mb-10">内容に応じて、下記の窓口からお問い合わせください。</p>
 
@@ -47,8 +44,6 @@ export default function ContactPage() {
           <p>店舗の営業状況によって確認・返信にお時間をいただく場合があります。受け取り場所や営業時間は店舗受け取り案内、一般的なご質問はFAQもご確認ください。</p>
           <div className="mt-3 flex gap-5"><Link href="/pickup" className="text-p2 underline">店舗受け取り案内</Link><Link href="/faq" className="text-p2 underline">FAQ</Link></div>
         </section>
-      </main>
-      <Footer />
-    </>
+      </PageShell>
   );
 }

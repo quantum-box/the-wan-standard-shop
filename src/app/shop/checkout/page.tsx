@@ -177,7 +177,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-3">Checkout</h1>
+      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-3">お客様情報・受け取り方法</h1>
       <p className="text-sm text-n1 mb-8">受け取り方法とお支払い方法を選択してください。</p>
       <Link href="/shop/cart" className="text-sm text-n1 hover:text-p2 mb-6 inline-block">← カートに戻る</Link>
 
@@ -199,9 +199,9 @@ export default function CheckoutPage() {
         <section className="border border-s2/40 bg-white p-5">
           <h2 className="font-serif-ja text-base text-p2 mb-4">ご連絡先</h2>
           <div className="grid gap-4">
-            <div><label className={labelClass}>お名前 *</label><input name="name" value={contact.name} onChange={handleContactChange} required autoComplete="name" className={inputClass} /></div>
-            <div><label className={labelClass}>電話番号 *</label><input name="phone" value={contact.phone} onChange={handleContactChange} required type="tel" autoComplete="tel" className={inputClass} /></div>
-            <div><label className={labelClass}>メールアドレス{onlinePayment ? " *" : "（任意）"}</label><input name="email" value={contact.email} onChange={handleContactChange} required={onlinePayment} type="email" autoComplete="email" className={inputClass} /></div>
+            <div><label htmlFor="checkout-name" className={labelClass}>お名前 *</label><input id="checkout-name" name="name" value={contact.name} onChange={handleContactChange} required autoComplete="name" className={inputClass} /></div>
+            <div><label htmlFor="checkout-phone" className={labelClass}>電話番号 *</label><input id="checkout-phone" name="phone" value={contact.phone} onChange={handleContactChange} required type="tel" autoComplete="tel" className={inputClass} /></div>
+            <div><label htmlFor="checkout-email" className={labelClass}>メールアドレス{onlinePayment ? " *" : "（任意）"}</label><input id="checkout-email" name="email" value={contact.email} onChange={handleContactChange} required={onlinePayment} type="email" autoComplete="email" className={inputClass} /></div>
           </div>
         </section>
 
@@ -229,11 +229,11 @@ export default function CheckoutPage() {
           <section className="border border-s2/40 bg-white p-5">
             <h2 className="font-serif-ja text-base text-p2 mb-4">配送先</h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              <div><label className={labelClass}>郵便番号 *</label><input name="postalCode" value={deliveryAddress.postalCode} onChange={handleAddressChange} required autoComplete="postal-code" placeholder="005-0831" className={inputClass} /></div>
-              <div><label className={labelClass}>都道府県 *</label><input name="prefecture" value={deliveryAddress.prefecture} onChange={handleAddressChange} required autoComplete="address-level1" className={inputClass} /></div>
-              <div className="sm:col-span-2"><label className={labelClass}>市区町村 *</label><input name="city" value={deliveryAddress.city} onChange={handleAddressChange} required autoComplete="address-level2" className={inputClass} /></div>
-              <div className="sm:col-span-2"><label className={labelClass}>番地 *</label><input name="addressLine1" value={deliveryAddress.addressLine1} onChange={handleAddressChange} required autoComplete="address-line1" className={inputClass} /></div>
-              <div className="sm:col-span-2"><label className={labelClass}>建物名・部屋番号</label><input name="addressLine2" value={deliveryAddress.addressLine2} onChange={handleAddressChange} autoComplete="address-line2" className={inputClass} /></div>
+              <div><label htmlFor="checkout-postalCode" className={labelClass}>郵便番号 *</label><input id="checkout-postalCode" name="postalCode" value={deliveryAddress.postalCode} onChange={handleAddressChange} required autoComplete="postal-code" placeholder="005-0831" className={inputClass} /></div>
+              <div><label htmlFor="checkout-prefecture" className={labelClass}>都道府県 *</label><input id="checkout-prefecture" name="prefecture" value={deliveryAddress.prefecture} onChange={handleAddressChange} required autoComplete="address-level1" className={inputClass} /></div>
+              <div className="sm:col-span-2"><label htmlFor="checkout-city" className={labelClass}>市区町村 *</label><input id="checkout-city" name="city" value={deliveryAddress.city} onChange={handleAddressChange} required autoComplete="address-level2" className={inputClass} /></div>
+              <div className="sm:col-span-2"><label htmlFor="checkout-addressLine1" className={labelClass}>番地 *</label><input id="checkout-addressLine1" name="addressLine1" value={deliveryAddress.addressLine1} onChange={handleAddressChange} required autoComplete="address-line1" className={inputClass} /></div>
+              <div className="sm:col-span-2"><label htmlFor="checkout-addressLine2" className={labelClass}>建物名・部屋番号</label><input id="checkout-addressLine2" name="addressLine2" value={deliveryAddress.addressLine2} onChange={handleAddressChange} autoComplete="address-line2" className={inputClass} /></div>
             </div>
             <div className="mt-5 pt-5 border-t border-s2/30 grid sm:grid-cols-2 gap-4 text-sm">
               <div><p className="text-xs text-n1 mb-1">配送方法</p><p className="text-p2">通常配送</p></div>

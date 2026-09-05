@@ -1,8 +1,10 @@
+import { homeDogImages } from '@/lib/homepage-content'
+import { PageShell } from '@/components/ui/PageShell'
+import { EditorialHero } from '@/components/ui/EditorialHero'
+import styles from '@/components/ui/storefront.module.css'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Header } from '@/components/ui/Header'
-import { Footer } from '@/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: '店舗受け取り・アクセス | THE WAN STANDARD',
@@ -36,34 +38,11 @@ const pickupSteps = [
 
 export default function PickupPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-grow">
-        <section className="relative min-h-[620px] flex items-end overflow-hidden">
-          <Image
-            src="/assets/tws-creative/tws-scene-store-pickup-2.jpeg"
-            alt="バーナード・スクエアでTHE WAN STANDARDの商品を受け取る"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-p3/90 via-p3/50 to-p3/15" />
-          <div className="relative z-10 max-w-6xl w-full mx-auto px-6 md:px-10 py-16 md:py-20">
-            <p className="font-serif-en text-s2 text-xs tracking-[0.4em] mb-5">PICK UP AT BERNARD SQUARE</p>
-            <h1 className="font-serif-ja text-3xl md:text-5xl text-p1 leading-[1.5] mb-7">
-              受け取りも、
-              <br />
-              犬とのお出かけのひとつに。
-            </h1>
-            <p className="text-sm text-p1/80 leading-[2] max-w-2xl">
-              THE WAN STANDARDの商品は、札幌市南区のバーナード・スクエアで受け取れます。
-              オンラインで選んだものを、犬と人が集まる場所で受け取る。それも私たちが大切にしたい体験です。
-            </p>
-          </div>
-        </section>
+    <PageShell variant="editorial">
+        <EditorialHero eyebrow="PICK UP AT BERNARD SQUARE" title={<>受け取りも、<br />犬とのお出かけのひとつに。</>} lead="オンラインで選んだ一椀を、犬と人が集まる場所で。THE WAN STANDARDの商品は、札幌市南区のバーナード・スクエアで受け取れます。" image={homeDogImages.saintBernard} caption="暮らしのイメージ。受け取り店舗の写真ではありません。" />
 
-        <section className="max-w-6xl mx-auto px-6 md:px-10 py-20 md:py-28">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+        <section className={styles.editorialBody}>
+          <div className={styles.sectionIntro}>
             <p className="font-serif-en text-s2 text-xs tracking-[0.4em] mb-5">HOW IT WORKS</p>
             <h2 className="font-serif-ja text-2xl md:text-4xl text-p2 mb-7">オンラインから、店頭まで。</h2>
             <p className="text-sm text-n1 leading-[2]">
@@ -72,9 +51,9 @@ export default function PickupPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-px bg-s2/25 border border-s2/25 mb-24">
+          <div className={`${styles.gridFour} mb-16`}>
             {pickupSteps.map((item) => (
-              <article key={item.num} className="bg-p1 p-7 min-h-[250px]">
+              <article key={item.num} className={styles.card}>
                 <span className="font-serif-en text-s2 text-4xl font-light">{item.num}</span>
                 <h3 className="font-serif-ja text-lg text-p2 mt-5 mb-4">{item.title}</h3>
                 <p className="text-sm text-n1 leading-[1.9]">{item.desc}</p>
@@ -83,14 +62,18 @@ export default function PickupPage() {
           </div>
 
           <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-stretch mb-24">
-            <div className="relative min-h-[440px] overflow-hidden">
+            <figure>
+            <div className={styles.splitPhoto}>
               <Image
-                src="/assets/tws-creative/tws-scene-cafe-terrace-1.jpeg"
-                alt="バーナード・スクエアで過ごす時間"
+                src={homeDogImages.shiba.src}
+                alt={homeDogImages.shiba.alt}
+                data-breed={homeDogImages.shiba.breed}
                 fill
                 className="object-cover"
               />
             </div>
+            <figcaption className={styles.caption}>暮らしのイメージ。受け取り店舗の写真ではありません。</figcaption>
+            </figure>
 
             <div className="border border-s2/40 bg-white p-8 md:p-10 flex flex-col justify-center">
               <p className="font-serif-en text-s2 text-xs tracking-[0.35em] mb-5">BERNARD SQUARE</p>
@@ -158,8 +141,6 @@ export default function PickupPage() {
             <Link href="/contact" className="border border-s2/40 text-n1 px-8 py-3 text-xs hover:border-p2 hover:text-p2 transition-colors">お問い合わせ</Link>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+      </PageShell>
   )
 }

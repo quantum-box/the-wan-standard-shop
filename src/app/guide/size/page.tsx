@@ -1,8 +1,9 @@
+import { homeDogImages } from '@/lib/homepage-content'
+import { PageShell } from '@/components/ui/PageShell'
+import { EditorialHero } from '@/components/ui/EditorialHero'
+import styles from '@/components/ui/storefront.module.css'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
-import { Header } from '@/components/ui/Header'
-import { Footer } from '@/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: 'サイズ・商品の選び方 | THE WAN STANDARD',
@@ -40,34 +41,11 @@ const checkpoints = [
 
 export default function SizeGuidePage() {
   return (
-    <>
-      <Header />
-      <main className="flex-grow">
-        <section className="relative min-h-[560px] flex items-end overflow-hidden">
-          <Image
-            src="/assets/tws-creative/tws-scene-family-dog-1.jpeg"
-            alt="愛犬に合う器を選ぶ"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-p3/90 via-p3/45 to-p3/10" />
-          <div className="relative z-10 max-w-5xl w-full mx-auto px-6 md:px-10 py-16 md:py-20">
-            <p className="font-serif-en text-s2 text-xs tracking-[0.4em] mb-5">HOW TO CHOOSE</p>
-            <h1 className="font-serif-ja text-3xl md:text-5xl text-p1 leading-[1.5] mb-6">
-              犬種ではなく、
-              <br />
-              その子の食べ方から選ぶ。
-            </h1>
-            <p className="text-sm text-p1/80 leading-[2] max-w-2xl">
-              同じ犬種でも、体格や食事量、マズル、食べる姿勢はそれぞれ違います。
-              サイズ表を答えにするのではなく、比較のための出発点として使ってください。
-            </p>
-          </div>
-        </section>
+    <PageShell variant="editorial">
+        <EditorialHero eyebrow="HOW TO CHOOSE" title={<>犬種ではなく、<br />その子の食べ方から選ぶ。</>} lead="同じ犬種でも、体格や食事量、マズル、食べる姿勢はそれぞれ違います。サイズ表を答えにするのではなく、比較のための出発点として使ってください。" image={homeDogImages.husky} />
 
-        <section className="max-w-5xl mx-auto px-6 md:px-10 py-20 md:py-28">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+        <section className={styles.editorialBody}>
+          <div className={styles.sectionIntro}>
             <p className="font-serif-en text-s2 text-xs tracking-[0.4em] mb-5">START WITH WHAT YOU KNOW</p>
             <h2 className="font-serif-ja text-2xl md:text-4xl text-p2 leading-[1.6] mb-7">いちばん確かな基準は、いま使っている器。</h2>
             <p className="text-sm text-n1 leading-[2]">
@@ -76,9 +54,9 @@ export default function SizeGuidePage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-px bg-s2/25 border border-s2/25 mb-20">
+          <div className={`${styles.gridTwo} mb-16`}>
             {checkpoints.map((item) => (
-              <article key={item.num} className="bg-p1 p-7 md:p-9 min-h-[245px]">
+              <article key={item.num} className={styles.card}>
                 <span className="font-serif-en text-s2 text-4xl font-light">{item.num}</span>
                 <h3 className="font-serif-ja text-xl text-p2 mt-5 mb-4">{item.title}</h3>
                 <p className="text-sm text-n1 leading-[1.9]">{item.desc}</p>
@@ -95,15 +73,16 @@ export default function SizeGuidePage() {
               <p className="text-xs text-n1 max-w-sm leading-relaxed">各商品の実寸・容量を優先してください。下記は商品を比較するときの大まかな目安です。</p>
             </div>
 
-            <div className="overflow-x-auto border-y border-s2/40">
-              <table className="w-full min-w-[760px] text-sm border-collapse">
+            <p className="text-xs text-n1 mb-3 md:hidden">表は横にスクロールして確認できます。</p>
+            <div role="region" aria-label="サイズ比較表（横にスクロールできます）" tabIndex={0} className="overflow-x-auto border-y border-s2/40">
+              <table aria-label="器のサイズ比較の目安" className="w-full min-w-[760px] text-sm border-collapse">
                 <thead>
                   <tr className="text-left text-p2 bg-white/60">
-                    <th className="py-4 px-4">目安</th>
-                    <th className="py-4 px-4">直径</th>
-                    <th className="py-4 px-4">高さ</th>
-                    <th className="py-4 px-4">容量</th>
-                    <th className="py-4 px-4">比較するときの体格例</th>
+                    <th scope="col" className="py-4 px-4">目安</th>
+                    <th scope="col" className="py-4 px-4">直径</th>
+                    <th scope="col" className="py-4 px-4">高さ</th>
+                    <th scope="col" className="py-4 px-4">容量</th>
+                    <th scope="col" className="py-4 px-4">比較するときの体格例</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -159,8 +138,6 @@ export default function SizeGuidePage() {
             <Link href="/guide/cancel" className="border border-s2/40 text-n1 px-8 py-3 text-xs hover:border-p2 hover:text-p2 transition-colors">返品・キャンセル</Link>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+      </PageShell>
   )
 }

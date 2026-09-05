@@ -1,7 +1,6 @@
+import { PageShell } from "@/components/ui/PageShell";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header } from "@/components/ui/Header";
-import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "ショッピングガイド | THE WAN STANDARD",
@@ -17,9 +16,7 @@ const steps = [
 
 export default function GuidePage() {
   return (
-    <>
-      <Header />
-      <main className="flex-grow max-w-3xl w-full mx-auto px-4 sm:px-6 py-12">
+    <PageShell>
         <h1 className="font-serif-ja text-2xl md:text-3xl text-p2 mb-3">ショッピングガイド</h1>
         <p className="text-sm text-n1 leading-relaxed mb-10">
           THE WAN STANDARDは現在、ゲスト購入・店舗受け取りを中心にご利用いただけます。
@@ -66,8 +63,6 @@ export default function GuidePage() {
             <Link href="/contact" className="text-p2 underline">お問い合わせ</Link>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+      </PageShell>
   );
 }

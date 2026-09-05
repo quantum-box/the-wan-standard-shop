@@ -1,16 +1,15 @@
+import { PageShell } from "@/components/ui/PageShell";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header } from "@/components/ui/Header";
-import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = { title: "ご注文について | THE WAN STANDARD", robots: { index: false, follow: false } };
 
 const LINE_URL = "https://line.me/R/ti/p/@thewanstandard";
 
 export default function MyOrdersPage() {
-  return <><Header/><main className="flex-grow max-w-xl w-full mx-auto px-4 sm:px-6 py-16">
-    <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-2">Order Inquiry</h1>
-    <p className="font-serif-ja text-sm text-n1 mb-10">ご注文について</p>
+  return <PageShell variant="narrow">
+    <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-2">ご注文について</h1>
+    <p className="text-sm text-n1 mb-10">注文内容の確認から、受け取り・領収書のご相談まで。</p>
     <section className="border border-s2/40 bg-white p-6 mb-8">
       <h2 className="font-serif-ja text-base text-p2 mb-3">注文内容の確認</h2>
       <p className="text-sm text-n1 leading-relaxed mb-4">ご注文番号と電話番号で、注文状況をご確認いただけます。</p>
@@ -31,5 +30,5 @@ export default function MyOrdersPage() {
       </dl>
     </section>
     <Link href="/shop" className="text-sm text-n1 hover:text-p2">← ショップに戻る</Link>
-  </main><Footer/></>;
+  </PageShell>;
 }
