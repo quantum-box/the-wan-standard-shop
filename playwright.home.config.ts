@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Exercise the actual static export; no storefront writes or mocked home content.
+// Exercise the static export. Commerce APIs are isolated fixtures; home images are real.
 export default defineConfig({
   testDir: './tests',
-  testMatch: 'homepage-ui.spec.ts',
+  testMatch: ['homepage-ui.spec.ts', 'storefront-ui.spec.ts'],
   timeout: 45_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,

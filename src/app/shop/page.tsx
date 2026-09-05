@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { ShopProductGrid } from "./ShopProductGrid";
+import Link from "next/link";
+import styles from "@/components/ui/storefront.module.css";
 
 export const metadata: Metadata = {
   title: "Shop | THE WAN STANDARD",
@@ -31,9 +33,10 @@ export const metadata: Metadata = {
 export default function ShopPage() {
   return (
     <div>
-      <h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-8">
-        Shop
-      </h1>
+      <section className={styles.catalogIntro} aria-labelledby="shop-title">
+        <div><p className={styles.eyebrow} lang="en">THE COLLECTION</p><h1 id="shop-title">その子の毎日に、<br />ちょうどいい一椀を。</h1></div>
+        <div><p>食べ方も、からだの大きさも、それぞれ。<br />一緒に暮らす日々を思い浮かべながら、お選びください。</p><div className={styles.catalogLinks}><Link href="/guide/size" className={styles.textLink}>サイズ・商品の選び方</Link><Link href="/guide/gift" className={styles.textLink}>贈りものを選ぶ</Link></div></div>
+      </section>
       <ShopProductGrid />
     </div>
   );

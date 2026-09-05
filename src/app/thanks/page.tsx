@@ -4,7 +4,7 @@ import ThanksClient from './ThanksClient'
 export const metadata: Metadata = {
   title: 'ご購入ありがとうございます — THE WAN STANDARD',
   description:
-    'QRコードをご覧いただきありがとうございます。公式LINEに友だち追加で、次回5%OFFクーポンをお受け取りいただけます。',
+    'THE WAN STANDARD をお選びいただきありがとうございます。ご注文の確認と、愛犬との暮らしを楽しむためのご案内。',
 }
 
 export default function ThanksPage() {

@@ -1,8 +1,8 @@
+import { PageShell } from '@/components/ui/PageShell'
+import { EditorialHero } from '@/components/ui/EditorialHero'
+import styles from '@/components/ui/storefront.module.css'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
-import { Header } from '@/components/ui/Header'
-import { Footer } from '@/components/ui/Footer'
 
 export const metadata: Metadata = {
   title: 'ギフトについて | THE WAN STANDARD',
@@ -29,34 +29,11 @@ const giftChecks = [
 
 export default function GiftGuidePage() {
   return (
-    <>
-      <Header />
-      <main className="flex-grow">
-        <section className="relative min-h-[580px] flex items-end overflow-hidden">
-          <Image
-            src="/assets/tws-creative/tws-scene-cafe-terrace-2.jpeg"
-            alt="犬と暮らす人への贈りもの"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-p3/90 via-p3/45 to-p3/15" />
-          <div className="relative z-10 max-w-5xl w-full mx-auto px-6 md:px-10 py-16 md:py-20">
-            <p className="font-serif-en text-s2 text-xs tracking-[0.4em] mb-5">GIFT GUIDE</p>
-            <h1 className="font-serif-ja text-3xl md:text-5xl text-p1 leading-[1.5] mb-7">
-              犬ではなく、
-              <br />
-              犬との暮らしを贈る。
-            </h1>
-            <p className="text-sm text-p1/80 leading-[2] max-w-2xl">
-              毎日使うものだからこそ、贈りものにするときは少しだけ丁寧に選ぶ。
-              THE WAN STANDARDをギフトとして検討するときのポイントと、現在ご利用いただける範囲をご案内します。
-            </p>
-          </div>
-        </section>
+    <PageShell variant="editorial">
+        <EditorialHero eyebrow="GIFT GUIDE" title={<>犬ではなく、<br />犬との暮らしを贈る。</>} lead="毎日使うものだからこそ、贈りものにするときは少しだけ丁寧に選ぶ。ギフトを選ぶポイントと、現在ご利用いただける範囲をご案内します。" image={{ src: '/assets/tws-creative/tws-mood-texture-collection.jpeg', alt: '陶器や木の素材の表情を集めたブランドイメージ' }} />
 
-        <section className="max-w-5xl mx-auto px-6 md:px-10 py-20 md:py-28">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+        <section className={styles.editorialBody}>
+          <div className={styles.sectionIntro}>
             <p className="font-serif-en text-s2 text-xs tracking-[0.4em] mb-5">BEFORE YOU CHOOSE</p>
             <h2 className="font-serif-ja text-2xl md:text-4xl text-p2 mb-7">サイズだけ、少しだけ確かめる。</h2>
             <p className="text-sm text-n1 leading-[2]">
@@ -65,9 +42,9 @@ export default function GiftGuidePage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-px bg-s2/25 border border-s2/25 mb-20">
+          <div className={`${styles.gridThree} mb-16`}>
             {giftChecks.map((item) => (
-              <article key={item.num} className="bg-p1 p-7 min-h-[245px]">
+              <article key={item.num} className={styles.card}>
                 <span className="font-serif-en text-s2 text-4xl font-light">{item.num}</span>
                 <h3 className="font-serif-ja text-lg text-p2 mt-5 mb-4">{item.title}</h3>
                 <p className="text-sm text-n1 leading-[1.9]">{item.desc}</p>
@@ -139,8 +116,6 @@ export default function GiftGuidePage() {
             <Link href="/contact" className="border border-s2/40 text-n1 px-8 py-3 text-xs hover:border-p2 hover:text-p2 transition-colors">ギフトについて相談する</Link>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+      </PageShell>
   )
 }

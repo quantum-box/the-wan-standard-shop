@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getCategories, getProducts, type Product, type StoreCategory } from "@/lib/storekit";
 
+import { ProductImage } from "@/components/ui/ProductImage";
+import styles from "@/components/ui/storefront.module.css";
+
 type LoadState = "loading" | "ready" | "error";
 
 export function ShopProductGrid() {
@@ -48,13 +51,22 @@ export function ShopProductGrid() {
     });
   }, [products, query, selectedCategory, categoryById]);
 
-  if (state === "loading") return <div role="status" aria-live="polite" className="py-8 text-sm text-n1">商品を読み込んでいます...</div>;
-  if (state === "error") return <div className="border border-s2/40 bg-white p-6 text-center"><p className="text-sm text-p2 mb-2">商品を読み込めませんでした。</p><p className="text-xs text-n1 mb-4">通信環境をご確認のうえ、もう一度お試しください。</p><button type="button" onClick={() => void load()} className="px-5 py-2.5 bg-p2 text-p1 text-sm">再読み込み</button></div>;
-  if (products.length === 0) return <div className="py-12 text-center"><p className="text-sm text-n1 mb-3">現在、購入できる商品はありません。</p><Link href="/contact" className="text-sm text-p2 underline">商品について問い合わせる</Link></div>;
+  if (state === "loading") return <div role="status" aria-live="polite"><p className="text-sm text-n1 mb-6">商品を読み込んでいます…</p><div className={styles.skeletonGrid} aria-hidden="true">{[1, 2, 3].map((key) => <div key={key} className={styles.skeleton} />)}</div></div>;
+  if (state === "error") return <div className={styles.state} role="alert"><h2>商品を読み込めませんでした。</h2><p>通信環境をご確認のうえ、もう一度お試しください。</p><button type="button" onClick={() => void load()} className={styles.primaryLink}>再読み込み</button></div>;
+  if (products.length === 0) return <div className={styles.state}><h2>現在、購入できる商品はありません。</h2><p>商品についてのご相談は、お問い合わせからどうぞ。</p><Link href="/contact" className={styles.textLink}>商品について問い合わせる</Link></div>;
 
   return <>
-    <div className="mb-7"><label htmlFor="product-search" className="block text-xs text-n1 mb-2">商品を検索</label><div className="relative max-w-xl"><input id="product-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="商品名・カテゴリで検索" className="w-full border border-s2/60 bg-p1 px-4 py-3 pr-12 text-base sm:text-sm text-p2 focus:outline-none focus:border-p2" />{query && <button type="button" onClick={() => setQuery("")} aria-label="検索をクリア" className="absolute inset-y-0 right-0 px-4 text-n1 hover:text-p2">×</button>}</div>{query && <p className="text-xs text-n1 mt-2">{results.length}件の商品</p>}</div>
-    {visibleCategories.length > 0 && <div className="flex flex-wrap gap-2 mb-7" aria-label="商品カテゴリ"><button type="button" onClick={() => setSelectedSlug("all")} className={`px-4 py-2 text-xs tracking-wider border transition-colors ${!selectedCategory ? "bg-p2 border-p2 text-p1" : "border-s2/60 text-p2 hover:border-p2"}`}>All</button>{visibleCategories.map((category) => <button key={category.id} type="button" onClick={() => setSelectedSlug(category.slug)} className={`px-4 py-2 text-xs tracking-wider border transition-colors ${selectedCategory?.id === category.id ? "bg-p2 border-p2 text-p1" : "border-s2/60 text-p2 hover:border-p2"}`}>{category.name}</button>)}</div>}
-    {results.length === 0 ? <div className="py-14 text-center border-y border-s2/30"><p className="text-sm text-p2 mb-2">条件に一致する商品はありませんでした。</p><p className="text-xs text-n1 mb-4">検索語を短くするか、別のカテゴリをお試しください。</p><button onClick={() => { setQuery(""); setSelectedSlug("all"); }} className="text-sm text-p2 underline">すべての商品を見る</button></div> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">{results.map((product) => { const category = product.category ? categoryById.get(product.category) : undefined; const soldOut = !product.orderable; return <Link key={product.id} href={`/shop/${product.id}`} className="group border border-s2/40 hover:border-s2 transition-colors"><div className="relative aspect-square bg-white overflow-hidden">{product.imageUrl ? <img src={product.imageUrl} alt={product.name} className={`w-full h-full object-cover transition-transform duration-300 ${soldOut ? "opacity-65" : "group-hover:scale-105"}`} /> : <div className="w-full h-full flex items-center justify-center text-n1 text-xs">No Image</div>}{soldOut && <div className="absolute inset-x-0 bottom-0 bg-p2/90 py-2 text-center"><span className="text-p1 text-xs tracking-[0.2em]">SOLD OUT</span></div>}</div><div className="p-4">{category && <p className="text-[10px] tracking-widest text-s1 mb-1">{category.name}</p>}<p className="font-serif-ja text-p2 mb-1">{product.name}</p><p className="text-sm text-n1">¥{product.price.toLocaleString("ja-JP")}</p>{soldOut && <p className="text-xs text-s1 mt-2">再入荷予定: 未定</p>}</div></Link>; })}</div>}
+    <div className={styles.catalogToolbar}>
+      <div className={styles.search}><label htmlFor="product-search">商品を検索</label><div className={styles.searchField}><input id="product-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="商品名・カテゴリで検索" />{query && <button type="button" onClick={() => setQuery("")} aria-label="検索をクリア">×</button>}</div></div>
+      <p className={styles.resultCount} role="status" aria-live="polite">{results.length}件の商品</p>
+    </div>
+    {visibleCategories.length > 0 && <div className={styles.filters} role="group" aria-label="商品カテゴリ"><button type="button" onClick={() => setSelectedSlug("all")} aria-pressed={!selectedCategory}>すべて</button>{visibleCategories.map((category) => <button key={category.id} type="button" onClick={() => setSelectedSlug(category.slug)} aria-pressed={selectedCategory?.id === category.id}>{category.name}</button>)}</div>}
+    {results.length === 0 ? <div className={styles.state}><h2>条件に一致する商品はありませんでした。</h2><p>検索語を短くするか、別のカテゴリをお試しください。</p><button type="button" onClick={() => { setQuery(""); setSelectedSlug("all"); }} className={styles.textLink}>すべての商品を見る</button></div> : <div className={styles.productGrid}>{results.map((product) => {
+      const category = product.category ? categoryById.get(product.category) : undefined;
+      return <Link key={product.id} href={`/shop/${product.id}`} className={styles.productCard}>
+        <div className={styles.productPhoto}><ProductImage src={product.imageUrl} name={product.name} sizes="(max-width: 379px) calc(100vw - 40px), (max-width: 767px) 50vw, 33vw" />{!product.orderable && <span className={styles.soldOut}>在庫切れ</span>}</div>
+        <div className={styles.productMeta}>{category && <p className={styles.category}>{category.name}</p>}<h2>{product.name}</h2><p>¥{product.price.toLocaleString("ja-JP")}</p></div>
+      </Link>;
+    })}</div>}
   </>;
 }

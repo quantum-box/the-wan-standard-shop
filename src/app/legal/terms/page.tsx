@@ -1,6 +1,5 @@
+import { PageShell } from "@/components/ui/PageShell";
 import type { Metadata } from "next";
-import { Header } from "@/components/ui/Header";
-import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "利用規約 | THE WAN STANDARD",
@@ -11,9 +10,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-grow max-w-3xl w-full mx-auto px-4 sm:px-6 py-12">
+    <PageShell>
         <h1 className="font-serif-ja text-2xl md:text-3xl text-p2 mb-2">
           利用規約
         </h1>
@@ -125,8 +122,6 @@ export default function TermsPage() {
             </p>
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+      </PageShell>
   );
 }

@@ -41,7 +41,7 @@ export default function OrderDetailPage() {
     const date=new Date(order.createdAt);date.setDate(date.getDate()+7);return date;
   },[order]);
 
-  if(!order) return <div className="max-w-xl py-8"><h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">Order Detail</h1><p className="text-sm text-n1 mb-5">{orderId?"この端末に注文詳細がありません。もう一度注文照会を行ってください。":"表示する注文が指定されていません。"}</p><Link href="/shop/orders/lookup" className="text-sm text-p2 underline">注文を照会する</Link></div>;
+  if(!order) return <div className="max-w-xl py-8"><h1 className="font-serif-en text-2xl tracking-widest uppercase text-p2 mb-4">ご注文の詳細</h1><p className="text-sm text-n1 mb-5">{orderId?"この端末に注文詳細がありません。もう一度注文照会を行ってください。":"表示する注文が指定されていません。"}</p><Link href="/shop/orders/lookup" className="text-sm text-p2 underline">注文を照会する</Link></div>;
 
   return <div className="max-w-2xl">
     <div className="flex flex-col sm:flex-row sm:justify-between gap-3 mb-8"><div><p className="text-xs text-n1 mb-1">注文番号</p><h1 className="font-serif-en text-xl tracking-wider text-p2 break-all">{order.id}</h1></div><div className="sm:text-right"><p className="text-xs text-n1">注文日時</p><p className="text-sm text-p2">{formatDate(order.createdAt)}</p></div></div>

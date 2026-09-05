@@ -1,7 +1,6 @@
+import { PageShell } from "@/components/ui/PageShell";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header } from "@/components/ui/Header";
-import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "返品・キャンセルポリシー | THE WAN STANDARD",
@@ -10,9 +9,7 @@ export const metadata: Metadata = {
 
 export default function CancelPolicyPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-grow max-w-3xl w-full mx-auto px-4 sm:px-6 py-12">
+    <PageShell>
         <h1 className="font-serif-ja text-2xl md:text-3xl text-p2 mb-3">返品・キャンセルポリシー</h1>
         <p className="text-sm text-n1 leading-relaxed mb-10">
           店舗受け取り・店頭払いのご注文について、キャンセルや返品が必要になった場合の基本的な取り扱いをご案内します。
@@ -51,8 +48,6 @@ export default function CancelPolicyPage() {
           <Link href="/legal/commercial-transactions" className="text-p2 underline">特定商取引法に基づく表記</Link>
           <Link href="/contact" className="text-p2 underline">お問い合わせ</Link>
         </div>
-      </main>
-      <Footer />
-    </>
+      </PageShell>
   );
 }
