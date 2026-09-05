@@ -46,7 +46,7 @@
 .textLink:hover { border-bottom-color: transparent; }
 .heroNote { margin-top: 64px; color: var(--home-muted); font-family: var(--font-serif-en, "Cormorant Garamond"), serif; font-size: 12px; letter-spacing: 0.14em; }
 .heroFigure { min-width: 0; }
-.heroPhoto { position: relative; aspect-ratio: 6 / 5; min-height: 440px; background: #e4dbcd; overflow: hidden; }
+.heroPhoto { position: relative; width: 100%; aspect-ratio: 6 / 5; min-height: 440px; background: #e4dbcd; overflow: hidden; }
 .photo { object-fit: cover; }
 .photoCaption { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px 16px; margin-top: 14px; color: var(--home-muted); font-size: 10px; line-height: 1.8; }
 .photoCaption span[lang] { font-family: var(--font-sans-en, "Inter"), sans-serif; font-size: 9px; letter-spacing: 0.12em; }
